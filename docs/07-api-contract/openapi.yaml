@@ -1,0 +1,2498 @@
+openapi: 3.1.1
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: SIMUTU PT API
+  version: 1.0.0-draft
+  summary: Design-first API contract for the higher-education quality survey platform.
+  description: |
+    Phase 07 draft. It documents critical first-party SPA, respondent, leadership,
+    export, follow-up, and governed AI contracts; it does not claim endpoints are implemented.
+
+    Successful representations are transformed through Laravel JsonResource or
+    ResourceCollection. Internal browser operations use a stateful session and CSRF.
+    Leadership results and exports are always restricted by effective organizational
+    scope and released-snapshot reporting thresholds.
+  contact:
+    name: System owner to be confirmed
+  license:
+    name: Internal project documentation; software license TBD
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: /api/v1
+    description: Same-origin version 1 API
+tags:
+  - name: Authentication
+    description: Stateful first-party session and CSRF bootstrap.
+  - name: Templates
+    description: Survey template and instrument version contracts.
+  - name: Review
+    description: Governed instrument review submissions and decisions.
+  - name: Campaigns
+    description: Survey periods, campaigns, targeting, and publication.
+  - name: Respondent
+    description: Invitation exchange and minimized respondent presentation.
+  - name: Responses
+    description: Isolated response provisioning, autosave, and final submission.
+  - name: Analysis
+    description: Reproducible statistical job and lineage contracts.
+  - name: Leadership
+    description: Released, organizationally scoped, disclosure-controlled results.
+  - name: Exports
+    description: Governed asynchronous export and one-time download contracts.
+  - name: PPEPP
+    description: Findings, improvement actions, evidence, and verification.
+  - name: AI Governance
+    description: Post-MVP AI configuration and job contracts; disabled by default.
+security:
+  - sessionCookie: []
+
+paths:
+  /sanctum/csrf-cookie:
+    servers:
+      - url: /
+        description: Laravel authentication bootstrap
+    get:
+      operationId: initializeCsrfCookie
+      tags: [Authentication]
+      summary: Initialize the first-party CSRF cookie.
+      security: []
+      x-rate-limit-class: csrf
+      responses:
+        '204':
+          description: XSRF-TOKEN cookie initialized.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Includes the XSRF-TOKEN cookie; actual value is never documented.
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /login:
+    servers:
+      - url: /
+        description: Laravel authentication route
+    post:
+      operationId: login
+      tags: [Authentication]
+      summary: Establish a stateful internal-user session.
+      security:
+        - csrfHeader: []
+      x-rate-limit-class: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '204':
+          description: Authenticated; a secure session cookie is issued and rotated.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Secure HttpOnly session cookie.
+        '401':
+          $ref: '#/components/responses/AuthenticationFailed'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /logout:
+    servers:
+      - url: /
+        description: Laravel authentication route
+    post:
+      operationId: logout
+      tags: [Authentication]
+      summary: Revoke the current stateful session.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      responses:
+        '204':
+          description: Session revoked.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '419':
+          $ref: '#/components/responses/SessionExpired'
+
+  /session:
+    get:
+      operationId: getSession
+      tags: [Authentication]
+      summary: Get the current user, assurance, and safe effective-scope summary.
+      x-permission: authenticated
+      x-scope: own-session
+      responses:
+        '200':
+          description: Current session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /survey-templates:
+    get:
+      operationId: listSurveyTemplates
+      tags: [Templates]
+      summary: List templates visible in the effective unit or assignment scope.
+      x-permission: template.read
+      x-scope: organizational-unit-or-assignment
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageLimit'
+        - $ref: '#/components/parameters/Sort'
+        - name: filter[status]
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, retired]
+      responses:
+        '200':
+          description: Scoped template collection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyTemplateCollection'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createSurveyTemplate
+      tags: [Templates]
+      summary: Create a survey template draft.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: template.create
+      x-scope: owner-unit
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SurveyTemplateCreateRequest'
+      responses:
+        '201':
+          description: Template created.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyTemplateEnvelope'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+
+  /instrument-versions/{instrument_version_id}/review-submissions:
+    post:
+      operationId: submitInstrumentVersionForReview
+      tags: [Review]
+      summary: Freeze the draft hash and submit the instrument version for review.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: validation.create
+      x-scope: owner-unit
+      parameters:
+        - $ref: '#/components/parameters/InstrumentVersionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reviewer_ids]
+              properties:
+                reviewer_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  uniqueItems: true
+                  items:
+                    $ref: '#/components/schemas/Uuid'
+                due_at:
+                  type: [string, 'null']
+                  format: date-time
+      responses:
+        '202':
+          description: Review submission accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobEnvelope'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/VersionConflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+
+  /review-assignments/{review_assignment_id}/decisions:
+    post:
+      operationId: decideInstrumentReview
+      tags: [Review]
+      summary: Approve or return exactly the assigned reviewed hash.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: validation.approve
+      x-scope: active-assignment
+      x-separation-of-duties: reviewer-must-not-be-creator
+      parameters:
+        - $ref: '#/components/parameters/ReviewAssignmentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewDecisionRequest'
+      responses:
+        '201':
+          description: Review decision recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewDecisionEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /surveys:
+    get:
+      operationId: listSurveys
+      tags: [Campaigns]
+      summary: List campaigns within the caller's effective scope.
+      x-permission: campaign.read
+      x-scope: organizational-unit-hierarchy-or-assignment
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageLimit'
+        - $ref: '#/components/parameters/Sort'
+        - name: filter[state]
+          in: query
+          schema:
+            type: string
+            pattern: '^[a-z_]+(,[a-z_]+)*$'
+        - name: include
+          in: query
+          schema:
+            type: string
+            enum: [period, owner_unit, 'period,owner_unit']
+      responses:
+        '200':
+          description: Scoped campaign collection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyCollection'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createSurvey
+      tags: [Campaigns]
+      summary: Create a draft campaign pinned to an approved instrument version.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: campaign.create
+      x-scope: owner-unit
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SurveyCreateRequest'
+      responses:
+        '201':
+          description: Survey draft created.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyEnvelope'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /surveys/{survey_id}:
+    parameters:
+      - $ref: '#/components/parameters/SurveyId'
+    get:
+      operationId: getSurvey
+      tags: [Campaigns]
+      summary: Get a scoped campaign representation.
+      x-permission: campaign.read
+      x-scope: organizational-unit-hierarchy-or-assignment
+      responses:
+        '200':
+          description: Survey representation.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyEnvelope'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateSurveyDraft
+      tags: [Campaigns]
+      summary: Update allowed campaign attributes while it is mutable.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: campaign.update
+      x-scope: owner-unit
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SurveyUpdateRequest'
+      responses:
+        '200':
+          description: Updated survey.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyEnvelope'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/VersionConflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+
+  /surveys/{survey_id}/review-submissions:
+    post:
+      operationId: submitSurveyForReview
+      tags: [Campaigns]
+      summary: Freeze the current campaign configuration and submit it for review.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: campaign.review
+      x-scope: owner-unit
+      parameters:
+        - $ref: '#/components/parameters/SurveyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Survey entered the in-review state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyEnvelope'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/VersionConflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+
+  /surveys/{survey_id}/review-decisions:
+    post:
+      operationId: decideSurveyReview
+      tags: [Campaigns]
+      summary: Approve or return an in-review campaign configuration.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: campaign.approve
+      x-scope: owner-unit
+      x-separation-of-duties: reviewer-must-differ-from-creator
+      parameters:
+        - $ref: '#/components/parameters/SurveyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewDecisionRequest'
+      responses:
+        '200':
+          description: Survey review decision recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/VersionConflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+
+  /surveys/{survey_id}/preflights:
+    post:
+      operationId: preflightSurvey
+      tags: [Campaigns]
+      summary: Evaluate publication blockers against the current survey version.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: campaign.publish
+      x-scope: owner-unit
+      parameters:
+        - $ref: '#/components/parameters/SurveyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Preflight result; pass may be false without transport failure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreflightEnvelope'
+        '412':
+          $ref: '#/components/responses/VersionConflict'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+
+  /surveys/{survey_id}/publications:
+    post:
+      operationId: publishSurvey
+      tags: [Campaigns]
+      summary: Publish or schedule a survey after all approval and privacy gates pass.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: campaign.publish
+      x-scope: owner-unit
+      x-separation-of-duties: approved-instrument-required
+      parameters:
+        - $ref: '#/components/parameters/SurveyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                acknowledgement:
+                  type: boolean
+                  const: true
+      responses:
+        '200':
+          description: Survey published or scheduled.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyEnvelope'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/VersionConflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /respondent-sessions:
+    post:
+      operationId: exchangeInvitation
+      tags: [Respondent]
+      summary: Exchange a single-use invitation for a campaign-bound respondent session.
+      security: []
+      x-rate-limit-class: invitation-exchange
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [invitation_token]
+              properties:
+                invitation_token:
+                  type: string
+                  minLength: 32
+                  maxLength: 512
+                  writeOnly: true
+      responses:
+        '201':
+          description: Respondent session created; no participant identity is returned.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Restricted campaign-bound response session cookie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespondentSessionEnvelope'
+        '401':
+          $ref: '#/components/responses/AuthenticationFailed'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /respondent-survey:
+    get:
+      operationId: getRespondentSurvey
+      tags: [Respondent]
+      summary: Get the active questionnaire and notice for the respondent session.
+      security:
+        - respondentSession: []
+      x-scope: current-respondent-session-campaign
+      responses:
+        '200':
+          description: Minimized respondent survey representation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespondentSurveyEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /responses:
+    post:
+      operationId: provisionResponse
+      tags: [Responses]
+      summary: Provision an independent response draft using the one-time handoff.
+      security:
+        - respondentSession: []
+          csrfHeader: []
+      x-scope: current-respondent-session-campaign
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [handoff_token, notice_version]
+              properties:
+                handoff_token:
+                  type: string
+                  minLength: 32
+                  maxLength: 1024
+                  writeOnly: true
+                notice_version:
+                  type: string
+                  minLength: 1
+                  maxLength: 40
+      responses:
+        '201':
+          description: Independent response draft created.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseEnvelope'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /responses/{response_id}:
+    parameters:
+      - $ref: '#/components/parameters/ResponseId'
+    get:
+      operationId: getOwnResponseDraft
+      tags: [Responses]
+      summary: Get the current session's response draft.
+      security:
+        - respondentSession: []
+      x-scope: exact-response-session
+      responses:
+        '200':
+          description: Own response draft.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseEnvelope'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: autosaveResponse
+      tags: [Responses]
+      summary: Autosave typed answer changes with optimistic locking and idempotency.
+      security:
+        - respondentSession: []
+          csrfHeader: []
+      x-scope: exact-response-session
+      x-rate-limit-class: autosave
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutosaveRequest'
+      responses:
+        '200':
+          description: Autosave committed.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseEnvelope'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/VersionConflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /responses/{response_id}/submissions:
+    post:
+      operationId: submitResponse
+      tags: [Responses]
+      summary: Validate and submit the final response exactly once.
+      security:
+        - respondentSession: []
+          csrfHeader: []
+      x-scope: exact-response-session
+      x-rate-limit-class: final-submit
+      parameters:
+        - $ref: '#/components/parameters/ResponseId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitResponseRequest'
+      responses:
+        '200':
+          description: Submitted, or the original receipt replayed for the same idempotent request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionReceiptEnvelope'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/VersionConflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /surveys/{survey_id}/analysis-runs:
+    post:
+      operationId: createAnalysisRun
+      tags: [Analysis]
+      summary: Create a reproducible statistical analysis job.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: analysis.execute
+      x-scope: assigned-campaign
+      parameters:
+        - $ref: '#/components/parameters/SurveyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisRunRequest'
+      responses:
+        '202':
+          description: Analysis job accepted.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /analysis-runs/{analysis_run_id}:
+    get:
+      operationId: getAnalysisRun
+      tags: [Analysis]
+      summary: Get analysis state, immutable input lineage, and quality summary.
+      x-permission: analysis.read
+      x-scope: assigned-campaign-or-unit
+      parameters:
+        - $ref: '#/components/parameters/AnalysisRunId'
+      responses:
+        '200':
+          description: Analysis run.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisRunEnvelope'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /leadership/results:
+    get:
+      operationId: listLeadershipResults
+      tags: [Leadership]
+      summary: List released, scoped, and disclosure-controlled aggregate results.
+      description: |
+        Organizational scope is derived from current grants. Client filters can only narrow it.
+        The endpoint never returns raw responses, candidate cells, or suppressed values.
+      x-permission: report.read
+      x-scope: organizational-hierarchy-derived-server-side
+      x-reporting-threshold: required
+      x-suppression-controls:
+        - minimum-cell
+        - sensitive-cell
+        - complementary-suppression
+        - anti-differencing
+        - dominance
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageLimit'
+        - name: filter[survey_id]
+          in: query
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: filter[organizational_unit_id]
+          in: query
+          description: Narrows the caller's hierarchy; it never grants scope.
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: filter[metric_code]
+          in: query
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 80
+        - name: fields[leadership_results]
+          in: query
+          schema:
+            type: string
+            pattern: '^[a-z_]+(,[a-z_]+)*$'
+      responses:
+        '200':
+          description: Released safe result collection, including explicit suppressed/no-data states.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Private cache directive tied to release/scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadershipResultCollection'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /report-exports:
+    post:
+      operationId: requestReportExport
+      tags: [Exports]
+      summary: Request an asynchronous export from a released safe report or snapshot.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: report.export
+      x-scope: current-organizational-hierarchy-and-campaign
+      x-reporting-threshold: revalidated-at-request-generation-and-download
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '202':
+          description: Export job accepted; no download URL until ready and approved.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /report-exports/{export_id}:
+    get:
+      operationId: getReportExport
+      tags: [Exports]
+      summary: Get export job, classification, approval, and expiry state.
+      x-permission: report.export
+      x-scope: requester-and-current-resource-scope
+      x-reporting-threshold: required
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: Export metadata; secret storage key and raw provider URL are never returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportEnvelope'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/Gone'
+
+  /report-exports/{export_id}/download-tickets:
+    post:
+      operationId: createExportDownloadTicket
+      tags: [Exports]
+      summary: Create a one-time short-lived download ticket after reauthorization.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: report.export
+      x-scope: requester-and-current-resource-scope
+      x-reporting-threshold: revalidated
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: One-time ticket created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadTicketEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+
+  /findings:
+    get:
+      operationId: listFindings
+      tags: [PPEPP]
+      summary: List findings within hierarchy or assignment scope.
+      x-permission: finding.read
+      x-scope: organizational-hierarchy-or-assignment
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageLimit'
+      responses:
+        '200':
+          description: Finding collection with no raw response content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindingCollection'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createFinding
+      tags: [PPEPP]
+      summary: Create a finding linked to a released aggregate snapshot.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: finding.create
+      x-scope: owner-unit-and-released-snapshot
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindingCreateRequest'
+      responses:
+        '201':
+          description: Finding created.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindingEnvelope'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /findings/{finding_id}/actions:
+    post:
+      operationId: createAction
+      tags: [PPEPP]
+      summary: Create and assign an improvement action.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: action.create
+      x-scope: finding-owner-unit
+      parameters:
+        - $ref: '#/components/parameters/FindingId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionCreateRequest'
+      responses:
+        '201':
+          description: Action created and assigned.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /actions/{action_id}/verification-decisions:
+    post:
+      operationId: decideActionVerification
+      tags: [PPEPP]
+      summary: Verify or return an action using the current submitted version.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-permission: action.verify
+      x-scope: active-verification-assignment
+      x-separation-of-duties: verifier-must-not-be-pic
+      parameters:
+        - $ref: '#/components/parameters/ActionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationDecisionRequest'
+      responses:
+        '200':
+          description: Verification decision recorded.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/VersionConflict'
+
+  /ai-configurations:
+    post:
+      operationId: createAiConfiguration
+      tags: [AI Governance]
+      summary: Create a future governed AI configuration and write the API key to KMS.
+      description: Post-MVP and disabled by default. The API key is write-only and never appears in a response.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-feature-status: post-mvp-disabled
+      x-permission: ai-config.create
+      x-scope: institution-governance
+      x-assurance: step-up-mfa
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiConfigurationCreateRequest'
+      responses:
+        '201':
+          description: Configuration draft created with secret reference/fingerprint only.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiConfigurationEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '503':
+          $ref: '#/components/responses/DependencyUnavailable'
+
+  /analysis-runs/{analysis_run_id}/ai-jobs:
+    post:
+      operationId: createAiJob
+      tags: [AI Governance]
+      summary: Request a governed AI candidate from an approved analysis input.
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      x-feature-status: post-mvp-disabled
+      x-permission: ai.execute
+      x-scope: assigned-analysis-run
+      x-reporting-threshold: required-before-redaction
+      parameters:
+        - $ref: '#/components/parameters/AnalysisRunId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiJobCreateRequest'
+      responses:
+        '202':
+          description: AI job accepted after governance and budget preflight.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobEnvelope'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: laravel_session
+      description: Secure HttpOnly first-party session cookie; actual configured name may differ.
+    respondentSession:
+      type: apiKey
+      in: cookie
+      name: simutu_response_session
+      description: Restricted campaign/response-session cookie; not an internal-user session.
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-XSRF-TOKEN
+      description: URL-decoded value from the XSRF-TOKEN cookie for unsafe requests.
+
+  parameters:
+    Cursor:
+      name: page[cursor]
+      in: query
+      description: Opaque signed cursor bound to scope, filters, and sort.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 1024
+    PageLimit:
+      name: page[limit]
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+    Sort:
+      name: sort
+      in: query
+      description: Comma-separated allowlisted fields; prefix descending fields with a minus sign.
+      schema:
+        type: string
+        maxLength: 200
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable key for one logical request; never include PII or a credential.
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+        pattern: '^[\x21-\x7E]+$'
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Strong resource version ETag, for example "v7".
+      schema:
+        type: string
+        pattern: '^"v[0-9]+"$'
+    SurveyId:
+      name: survey_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    ResponseId:
+      name: response_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    InstrumentVersionId:
+      name: instrument_version_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    ReviewAssignmentId:
+      name: review_assignment_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    AnalysisRunId:
+      name: analysis_run_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    ExportId:
+      name: export_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    FindingId:
+      name: finding_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    ActionId:
+      name: action_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+
+  headers:
+    Location:
+      description: Relative URL of the created resource/job.
+      schema:
+        type: string
+        format: uri-reference
+    ETag:
+      description: Strong optimistic resource version.
+      schema:
+        type: string
+        pattern: '^"v[0-9]+"$'
+    RetryAfter:
+      description: Seconds until a safe retry may be attempted.
+      schema:
+        type: integer
+        minimum: 1
+
+  responses:
+    BadRequest:
+      description: Malformed request or unsupported query contract.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    AuthenticationFailed:
+      description: Authentication or invitation exchange failed without account/token enumeration.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Authentication is absent or expired.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    SessionExpired:
+      description: The first-party session or CSRF state expired.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Effective permission, scope, purpose, assurance, classification, or SoD denied.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Resource absent or concealed because it is outside scope.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: Business state or idempotency conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Gone:
+      description: Invitation, artifact, or ticket expired or was revoked.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    VersionConflict:
+      description: If-Match resource version is stale.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ValidationFailed:
+      description: Request passed protocol parsing but failed field/domain validation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PreconditionRequired:
+      description: If-Match or Idempotency-Key is required.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RateLimited:
+      description: Request rate, concurrency, anti-differencing, or governed budget limit reached.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    DependencyUnavailable:
+      description: Required approved dependency is unavailable; no false success is recorded.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    ResourceVersion:
+      type: integer
+      minimum: 1
+    RequestMeta:
+      type: object
+      additionalProperties: false
+      required: [request_id, schema_version]
+      properties:
+        request_id:
+          type: string
+          minLength: 16
+          maxLength: 64
+        schema_version:
+          type: string
+          pattern: '^[0-9]+\.[0-9]+$'
+        resource_version:
+          $ref: '#/components/schemas/ResourceVersion'
+    PageMeta:
+      type: object
+      additionalProperties: false
+      required: [limit, has_more]
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        has_more:
+          type: boolean
+    CollectionLinks:
+      type: object
+      additionalProperties: false
+      required: [self, next, prev]
+      properties:
+        self:
+          type: string
+          format: uri-reference
+        next:
+          type: [string, 'null']
+          format: uri-reference
+        prev:
+          type: [string, 'null']
+          format: uri-reference
+    ValidationIssue:
+      type: object
+      additionalProperties: false
+      required: [pointer, code, message]
+      properties:
+        pointer:
+          type: string
+          maxLength: 500
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]+$'
+        message:
+          type: string
+          maxLength: 500
+        meta:
+          type: object
+          additionalProperties: true
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, request_id, retryable]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+          maxLength: 200
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          maxLength: 1000
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]+$'
+        request_id:
+          type: string
+          minLength: 16
+          maxLength: 64
+        errors:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ValidationIssue'
+        retryable:
+          type: boolean
+        retry_after:
+          type: [integer, 'null']
+          minimum: 1
+        current_version:
+          type: [integer, 'null']
+          minimum: 1
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        password:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          writeOnly: true
+    SessionAttributes:
+      type: object
+      additionalProperties: false
+      required: [display_name, assurance, permissions, scope_version]
+      properties:
+        display_name:
+          type: string
+          maxLength: 200
+        assurance:
+          type: string
+          enum: [password, mfa, sso, sso_mfa]
+        permissions:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            maxLength: 120
+        scope_version:
+          type: string
+          maxLength: 80
+    SessionData:
+      type: object
+      additionalProperties: false
+      required: [type, id, attributes]
+      properties:
+        type:
+          const: sessions
+        id:
+          $ref: '#/components/schemas/Uuid'
+        attributes:
+          $ref: '#/components/schemas/SessionAttributes'
+    SessionEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/SessionData'
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    SurveyTemplateCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [owner_unit_id, code, family_code, name]
+      properties:
+        owner_unit_id:
+          $ref: '#/components/schemas/Uuid'
+        code:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9_-]{1,79}$'
+        family_code:
+          type: string
+          minLength: 1
+          maxLength: 80
+        name:
+          type: string
+          minLength: 1
+          maxLength: 240
+        purpose:
+          type: [string, 'null']
+          maxLength: 2000
+    SurveyTemplateAttributes:
+      type: object
+      additionalProperties: false
+      required: [code, family_code, name, status]
+      properties:
+        code:
+          type: string
+        family_code:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, retired]
+    SurveyTemplateData:
+      type: object
+      additionalProperties: false
+      required: [type, id, attributes]
+      properties:
+        type:
+          const: survey_templates
+        id:
+          $ref: '#/components/schemas/Uuid'
+        attributes:
+          $ref: '#/components/schemas/SurveyTemplateAttributes'
+    SurveyTemplateEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/SurveyTemplateData'
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    SurveyTemplateCollection:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyTemplateData'
+        links:
+          $ref: '#/components/schemas/CollectionLinks'
+        meta:
+          allOf:
+            - $ref: '#/components/schemas/RequestMeta'
+            - type: object
+              required: [page]
+              properties:
+                page:
+                  $ref: '#/components/schemas/PageMeta'
+    ReviewDecisionRequest:
+      type: object
+      additionalProperties: false
+      required: [decision, reviewed_hash]
+      properties:
+        decision:
+          type: string
+          enum: [approved, returned]
+        reviewed_hash:
+          type: string
+          pattern: '^sha256:[0-9a-f]{64}$'
+        comment:
+          type: [string, 'null']
+          maxLength: 5000
+    ReviewDecisionEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: reviews
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              type: object
+              additionalProperties: false
+              required: [decision, reviewed_hash, decided_at]
+              properties:
+                decision:
+                  type: string
+                  enum: [approved, returned]
+                reviewed_hash:
+                  type: string
+                decided_at:
+                  type: string
+                  format: date-time
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    PrivacyMode:
+      type: string
+      enum: [strict_anonymous, detached_anonymous, confidential_pseudonymous, identifiable]
+    SurveyCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [instrument_version_id, survey_period_id, owner_unit_id, code, privacy_mode, opens_at, closes_at, timezone]
+      properties:
+        instrument_version_id:
+          $ref: '#/components/schemas/Uuid'
+        survey_period_id:
+          $ref: '#/components/schemas/Uuid'
+        owner_unit_id:
+          $ref: '#/components/schemas/Uuid'
+        code:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9_-]{1,79}$'
+        privacy_mode:
+          $ref: '#/components/schemas/PrivacyMode'
+        opens_at:
+          type: string
+          format: date-time
+        closes_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+    SurveyUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        opens_at:
+          type: string
+          format: date-time
+        closes_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+    SurveyState:
+      type: string
+      enum: [draft, preflight_failed, ready, scheduled, open, paused, closed, archived, cancelled]
+    SurveyAttributes:
+      type: object
+      additionalProperties: false
+      required: [code, state, privacy_mode, opens_at, closes_at, timezone]
+      properties:
+        code:
+          type: string
+        state:
+          $ref: '#/components/schemas/SurveyState'
+        privacy_mode:
+          $ref: '#/components/schemas/PrivacyMode'
+        opens_at:
+          type: string
+          format: date-time
+        closes_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+    SurveyData:
+      type: object
+      additionalProperties: false
+      required: [type, id, attributes]
+      properties:
+        type:
+          const: surveys
+        id:
+          $ref: '#/components/schemas/Uuid'
+        attributes:
+          $ref: '#/components/schemas/SurveyAttributes'
+    SurveyEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/SurveyData'
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    SurveyCollection:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyData'
+        links:
+          $ref: '#/components/schemas/CollectionLinks'
+        meta:
+          allOf:
+            - $ref: '#/components/schemas/RequestMeta'
+            - type: object
+              required: [page]
+              properties:
+                page:
+                  $ref: '#/components/schemas/PageMeta'
+    PreflightEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: survey_preflights
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              type: object
+              additionalProperties: false
+              required: [passed, blocker_codes, checked_version]
+              properties:
+                passed:
+                  type: boolean
+                blocker_codes:
+                  type: array
+                  uniqueItems: true
+                  items:
+                    type: string
+                    maxLength: 120
+                checked_version:
+                  type: integer
+                  minimum: 1
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    RespondentSessionEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: respondent_sessions
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              type: object
+              additionalProperties: false
+              required: [survey_id, expires_at, privacy_mode, handoff_token]
+              properties:
+                survey_id:
+                  $ref: '#/components/schemas/Uuid'
+                expires_at:
+                  type: string
+                  format: date-time
+                privacy_mode:
+                  $ref: '#/components/schemas/PrivacyMode'
+                handoff_token:
+                  type: string
+                  minLength: 32
+                  maxLength: 1024
+                  writeOnly: true
+                  description: Single-use response-store handoff; never persisted as an invitation-response join key.
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    RespondentSurveyEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: respondent_surveys
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              type: object
+              additionalProperties: false
+              required: [title, state, notice_version, schema_hash, sections]
+              properties:
+                title:
+                  type: string
+                  maxLength: 240
+                state:
+                  type: string
+                  enum: [scheduled, open, paused, closed]
+                notice_version:
+                  type: string
+                  maxLength: 40
+                schema_hash:
+                  type: string
+                  pattern: '^sha256:[0-9a-f]{64}$'
+                sections:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    additionalProperties: true
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    AnswerInput:
+      type: object
+      additionalProperties: false
+      required: [question_id, answer_kind]
+      properties:
+        question_id:
+          $ref: '#/components/schemas/Uuid'
+        answer_kind:
+          type: string
+          enum: [numeric, text, option, multi_option, boolean, date, blank, refusal, na]
+        numeric_value:
+          type: [string, 'null']
+          pattern: '^-?[0-9]+(\.[0-9]{1,6})?$'
+        text_value:
+          type: [string, 'null']
+          maxLength: 5000
+        option_ids:
+          type: array
+          maxItems: 100
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Uuid'
+        boolean_value:
+          type: [boolean, 'null']
+        date_value:
+          type: [string, 'null']
+          format: date
+    AutosaveRequest:
+      type: object
+      additionalProperties: false
+      required: [client_schema_version, answers]
+      properties:
+        client_schema_version:
+          type: string
+          minLength: 1
+          maxLength: 40
+        answers:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/AnswerInput'
+    ResponseAttributes:
+      type: object
+      additionalProperties: false
+      required: [state, schema_hash, saved_at]
+      properties:
+        state:
+          type: string
+          enum: [draft, validating, submitted, rejected]
+        schema_hash:
+          type: string
+          pattern: '^sha256:[0-9a-f]{64}$'
+        saved_at:
+          type: string
+          format: date-time
+        answered_question_ids:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Uuid'
+    ResponseData:
+      type: object
+      additionalProperties: false
+      required: [type, id, attributes]
+      properties:
+        type:
+          const: responses
+        id:
+          $ref: '#/components/schemas/Uuid'
+        attributes:
+          $ref: '#/components/schemas/ResponseAttributes'
+    ResponseEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ResponseData'
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    SubmitResponseRequest:
+      type: object
+      additionalProperties: false
+      required: [notice_version, consent_decision, client_schema_hash, confirmation]
+      properties:
+        notice_version:
+          type: string
+          minLength: 1
+          maxLength: 40
+        consent_decision:
+          type: string
+          enum: [accepted, declined, acknowledged]
+        client_schema_hash:
+          type: string
+          pattern: '^sha256:[0-9a-f]{64}$'
+        confirmation:
+          type: boolean
+          const: true
+    SubmissionReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: submission_receipts
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              type: object
+              additionalProperties: false
+              required: [receipt, submitted_at, state]
+              properties:
+                receipt:
+                  type: string
+                  minLength: 32
+                  maxLength: 256
+                  writeOnly: true
+                  description: Nonidentifying recovery proof; shown only at submission/replay boundary.
+                submitted_at:
+                  type: string
+                  format: date-time
+                state:
+                  const: submitted
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    AnalysisRunRequest:
+      type: object
+      additionalProperties: false
+      required: [method, scoring_rule_id, expected_survey_version]
+      properties:
+        method:
+          type: string
+          enum: [servperf, servqual, ipa, csi_internal, skm_ikm, nps, internal]
+        scoring_rule_id:
+          $ref: '#/components/schemas/Uuid'
+        expected_survey_version:
+          type: integer
+          minimum: 1
+    AnalysisRunAttributes:
+      type: object
+      additionalProperties: false
+      required: [state, method, input_checksum, scoring_rule_checksum]
+      properties:
+        state:
+          type: string
+          enum: [queued, running, retry_waiting, failed, quarantined, completed, cancelled]
+        method:
+          type: string
+        input_checksum:
+          type: string
+        scoring_rule_checksum:
+          type: string
+        quality_summary:
+          type: [object, 'null']
+          additionalProperties: true
+    AnalysisRunEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: analysis_runs
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              $ref: '#/components/schemas/AnalysisRunAttributes'
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    JobAttributes:
+      type: object
+      additionalProperties: false
+      required: [job_type, state, attempt_count, created_at]
+      properties:
+        job_type:
+          type: string
+          maxLength: 120
+        state:
+          type: string
+          enum: [queued, running, retry_waiting, completed, failed, quarantined, cancelled]
+        attempt_count:
+          type: integer
+          minimum: 0
+        next_attempt_at:
+          type: [string, 'null']
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        failure:
+          type: [object, 'null']
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+            retryable:
+              type: boolean
+    JobEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: jobs
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              $ref: '#/components/schemas/JobAttributes'
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    ResultState:
+      type: string
+      enum: [value, zero, no_data, not_calculated, error, suppressed]
+    LeadershipResultData:
+      type: object
+      additionalProperties: false
+      required: [type, id, attributes]
+      properties:
+        type:
+          const: leadership_results
+        id:
+          $ref: '#/components/schemas/Uuid'
+        attributes:
+          type: object
+          additionalProperties: false
+          required: [metric_code, result_state, eligible_n, valid_n, missing_n, suppression_state, release_id]
+          properties:
+            metric_code:
+              type: string
+              maxLength: 80
+            dimension:
+              type: object
+              additionalProperties:
+                type: string
+                maxLength: 160
+            result_state:
+              $ref: '#/components/schemas/ResultState'
+            value:
+              type: [string, 'null']
+              pattern: '^-?[0-9]+(\.[0-9]{1,6})?$'
+              description: Must be null when result_state is suppressed/no_data/not_calculated/error.
+            eligible_n:
+              type: integer
+              minimum: 0
+            valid_n:
+              type: integer
+              minimum: 0
+            missing_n:
+              type: integer
+              minimum: 0
+            coverage:
+              type: [string, 'null']
+              pattern: '^[0-9]+(\.[0-9]{1,6})?$'
+            suppression_state:
+              type: string
+              enum: [not_required, primary_suppressed, complementary_suppressed, sensitive_suppressed]
+            limitation_codes:
+              type: array
+              uniqueItems: true
+              items:
+                type: string
+                maxLength: 120
+            release_id:
+              $ref: '#/components/schemas/Uuid'
+    LeadershipResultCollection:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadershipResultData'
+        links:
+          $ref: '#/components/schemas/CollectionLinks'
+        meta:
+          allOf:
+            - $ref: '#/components/schemas/RequestMeta'
+            - type: object
+              required: [page, scope, reporting_policy]
+              properties:
+                page:
+                  $ref: '#/components/schemas/PageMeta'
+                scope:
+                  type: object
+                  additionalProperties: false
+                  required: [type, root_id]
+                  properties:
+                    type:
+                      const: organizational_hierarchy
+                    root_id:
+                      $ref: '#/components/schemas/Uuid'
+                reporting_policy:
+                  type: object
+                  additionalProperties: false
+                  required: [version, minimum_cell_applied, anti_differencing_applied]
+                  properties:
+                    version:
+                      type: string
+                    minimum_cell_applied:
+                      type: boolean
+                    anti_differencing_applied:
+                      type: boolean
+    ExportRequest:
+      type: object
+      additionalProperties: false
+      required: [source_type, source_id, format, field_profile, purpose_code]
+      properties:
+        source_type:
+          type: string
+          enum: [report, aggregate_snapshot]
+        source_id:
+          $ref: '#/components/schemas/Uuid'
+        format:
+          type: string
+          enum: [pdf, csv, xlsx]
+        field_profile:
+          type: string
+          enum: [leadership_summary, item_detail, methodology_detail, action_register]
+        purpose_code:
+          type: string
+          minLength: 1
+          maxLength: 80
+        organizational_unit_id:
+          $ref: '#/components/schemas/Uuid'
+    ExportAttributes:
+      type: object
+      additionalProperties: false
+      required: [state, format, classification, policy_checksum, expires_at]
+      properties:
+        state:
+          type: string
+          enum: [requested, preflight, generating, quarantined, ready, expired, revoked, failed]
+        format:
+          type: string
+          enum: [pdf, csv, xlsx]
+        classification:
+          type: string
+          enum: [Public, Internal, Confidential, Restricted]
+        policy_checksum:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        approval_state:
+          type: string
+          enum: [not_required, pending, approved, rejected]
+    ExportEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: report_exports
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              $ref: '#/components/schemas/ExportAttributes'
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    DownloadTicketEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: download_tickets
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              type: object
+              additionalProperties: false
+              required: [download_url, expires_at, one_time]
+              properties:
+                download_url:
+                  type: string
+                  format: uri-reference
+                  writeOnly: true
+                expires_at:
+                  type: string
+                  format: date-time
+                one_time:
+                  const: true
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    FindingCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [aggregate_snapshot_id, owner_unit_id, code, title, severity]
+      properties:
+        aggregate_snapshot_id:
+          $ref: '#/components/schemas/Uuid'
+        owner_unit_id:
+          $ref: '#/components/schemas/Uuid'
+        code:
+          type: string
+          maxLength: 80
+        title:
+          type: string
+          maxLength: 300
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: [string, 'null']
+          maxLength: 10000
+    FindingData:
+      type: object
+      additionalProperties: false
+      required: [type, id, attributes]
+      properties:
+        type:
+          const: findings
+        id:
+          $ref: '#/components/schemas/Uuid'
+        attributes:
+          type: object
+          additionalProperties: false
+          required: [code, title, severity, state]
+          properties:
+            code:
+              type: string
+            title:
+              type: string
+            severity:
+              type: string
+              enum: [low, medium, high, critical]
+            state:
+              type: string
+              enum: [draft, approved, action_planned, in_progress, verification_pending, verified, closed]
+    FindingEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/FindingData'
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    FindingCollection:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FindingData'
+        links:
+          $ref: '#/components/schemas/CollectionLinks'
+        meta:
+          allOf:
+            - $ref: '#/components/schemas/RequestMeta'
+            - type: object
+              required: [page]
+              properties:
+                page:
+                  $ref: '#/components/schemas/PageMeta'
+    ActionCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [pic_user_id, title, plan, due_on, impact_review_on]
+      properties:
+        pic_user_id:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        plan:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        due_on:
+          type: string
+          format: date
+        impact_review_on:
+          type: string
+          format: date
+    ActionData:
+      type: object
+      additionalProperties: false
+      required: [type, id, attributes]
+      properties:
+        type:
+          const: actions
+        id:
+          $ref: '#/components/schemas/Uuid'
+        attributes:
+          type: object
+          additionalProperties: false
+          required: [title, state, due_on, verification_state]
+          properties:
+            title:
+              type: string
+            state:
+              type: string
+              enum: [draft, assigned, in_progress, submitted_for_verification, returned, verified, overdue, cancelled]
+            due_on:
+              type: string
+              format: date
+            verification_state:
+              type: string
+              enum: [not_submitted, pending, returned, verified]
+    ActionEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/ActionData'
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    VerificationDecisionRequest:
+      type: object
+      additionalProperties: false
+      required: [decision, rationale]
+      properties:
+        decision:
+          type: string
+          enum: [verified, returned]
+        rationale:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        impact_review_on:
+          type: [string, 'null']
+          format: date
+    AiConfigurationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [provider_slug, model_slug, endpoint_policy_id, api_key, monthly_budget, currency, prompt_policy_version, redaction_policy_version]
+      properties:
+        provider_slug:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9_-]{1,79}$'
+          description: References an approved provider registry entry, not a free-form URL.
+        model_slug:
+          type: string
+          minLength: 1
+          maxLength: 120
+        endpoint_policy_id:
+          $ref: '#/components/schemas/Uuid'
+        api_key:
+          type: string
+          minLength: 16
+          maxLength: 4096
+          writeOnly: true
+          description: Written directly to KMS/secret manager and never stored or returned as plaintext.
+        monthly_budget:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]{1,4})?$'
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        prompt_policy_version:
+          type: string
+          maxLength: 40
+        redaction_policy_version:
+          type: string
+          maxLength: 40
+    AiConfigurationEnvelope:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [type, id, attributes]
+          properties:
+            type:
+              const: ai_configurations
+            id:
+              $ref: '#/components/schemas/Uuid'
+            attributes:
+              type: object
+              additionalProperties: false
+              required: [provider_slug, model_slug, endpoint_policy_id, secret_fingerprint, state]
+              properties:
+                provider_slug:
+                  type: string
+                model_slug:
+                  type: string
+                endpoint_policy_id:
+                  $ref: '#/components/schemas/Uuid'
+                secret_fingerprint:
+                  type: string
+                  maxLength: 40
+                  readOnly: true
+                state:
+                  type: string
+                  enum: [draft, review_pending, approved, disabled, expired, revoked]
+        meta:
+          $ref: '#/components/schemas/RequestMeta'
+    AiJobCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [configuration_id, use_case, prompt_version, redaction_policy_version, token_budget, cost_budget]
+      properties:
+        configuration_id:
+          $ref: '#/components/schemas/Uuid'
+        use_case:
+          type: string
+          enum: [theme_suggestion, aggregate_summary, action_ideas, translation]
+        prompt_version:
+          type: string
+          maxLength: 40
+        redaction_policy_version:
+          type: string
+          maxLength: 40
+        token_budget:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        cost_budget:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]{1,4})?$'

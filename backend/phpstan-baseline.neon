@@ -1,0 +1,1351 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Cannot access property \$status on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Filament/Resources/InstrumentVersions/Pages/ViewInstrumentVersion.php
+
+		-
+			message: '#^Cannot call method isEditable\(\) on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Filament/Resources/InstrumentVersions/Pages/ViewInstrumentVersion.php
+
+		-
+			message: '#^Parameter \#1 \$source of method App\\Services\\InstrumentVersioning\:\:duplicate\(\) expects App\\Models\\InstrumentVersion, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/InstrumentVersions/Pages/ViewInstrumentVersion.php
+
+		-
+			message: '#^Parameter \#1 \$version of method App\\Services\\InstrumentLifecycle\:\:approve\(\) expects App\\Models\\InstrumentVersion, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/InstrumentVersions/Pages/ViewInstrumentVersion.php
+
+		-
+			message: '#^Parameter \#1 \$version of method App\\Services\\InstrumentLifecycle\:\:returnToDraft\(\) expects App\\Models\\InstrumentVersion, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/InstrumentVersions/Pages/ViewInstrumentVersion.php
+
+		-
+			message: '#^Parameter \#1 \$version of method App\\Services\\InstrumentLifecycle\:\:submitForReview\(\) expects App\\Models\\InstrumentVersion, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/InstrumentVersions/Pages/ViewInstrumentVersion.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isEditable\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Filament/Resources/InstrumentVersions/RelationManagers/CategoriesRelationManager.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isEditable\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Filament/Resources/InstrumentVersions/RelationManagers/ScalesRelationManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/InstrumentVersions/RelationManagers/SectionsRelationManager.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isEditable\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Filament/Resources/InstrumentVersions/RelationManagers/SectionsRelationManager.php
+
+		-
+			message: '#^Cannot access property \$state on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: app/Filament/Resources/Surveys/Pages/ViewSurvey.php
+
+		-
+			message: '#^Parameter \#1 \$source of method App\\Services\\SurveyDuplication\:\:duplicate\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Surveys/Pages/ViewSurvey.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Services\\SurveyLifecycle\:\:approve\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Surveys/Pages/ViewSurvey.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Services\\SurveyLifecycle\:\:archive\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Surveys/Pages/ViewSurvey.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Services\\SurveyLifecycle\:\:close\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Surveys/Pages/ViewSurvey.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Services\\SurveyLifecycle\:\:preflight\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Surveys/Pages/ViewSurvey.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Services\\SurveyLifecycle\:\:publish\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Surveys/Pages/ViewSurvey.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Services\\SurveyLifecycle\:\:returnToDraft\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Surveys/Pages/ViewSurvey.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Services\\SurveyLifecycle\:\:submitForReview\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/Surveys/Pages/ViewSurvey.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/Surveys/SurveyResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:versionLabel\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/Surveys/SurveyResource.php
+
+		-
+			message: '#^Cannot call method configurationEditable\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Filament/Resources/Surveys/SurveyResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AiController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$owner_unit_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/AiController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$requested_by\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AiController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$review_status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AiController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reviewer_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AiController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 5
+			path: app/Http/Controllers/Api/AiController.php
+
+		-
+			message: '#^Parameter \#2 \$job of method App\\Http\\Controllers\\Api\\AiController\:\:assertJobScope\(\) expects App\\Models\\AiJob, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Api/AiController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$checksum\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$disk\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$expires_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$format\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$path\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$revoked_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$state\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$suppressed\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$survey\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Enums\\SurveyState\:\:Closed, App\\Enums\\SurveyState\:\:Archived\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Cannot call method copy\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Cannot call method isPast\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Cannot call method lt\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 7
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Parameter \#1 \$snapshot of method App\\Http\\Controllers\\Api\\AnalyticsReportingController\:\:snapshotData\(\) expects App\\Models\\AggregateSnapshot, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Parameter \#2 \$survey of method App\\Http\\Controllers\\Api\\AnalyticsReportingController\:\:assertScope\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 4
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Http/Controllers/Api/AnalyticsReportingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ownerUnit\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Cannot call method isPast\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 3
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Offset ''indicators'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Parameter \#1 \$action of method App\\Http\\Controllers\\Api\\FollowUpController\:\:actionData\(\) expects App\\Models\\FollowUpAction, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\FollowUpAction\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Parameter \#2 \$finding of method App\\Http\\Controllers\\Api\\FollowUpController\:\:assertScope\(\) expects App\\Models\\Finding, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 5
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between ''released'' and ''released'' will always evaluate to false\.$#'
+			identifier: notIdentical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Api/FollowUpController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$closes_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$privacy_mode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$question_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sections\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$value\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 4
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Models\\SurveyParticipation\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Http\\Controllers\\Api\\ResponseCollectionController\:\:surveyData\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Parameter \#2 \$participation of method App\\Http\\Controllers\\Api\\ResponseCollectionController\:\:surveyData\(\) expects App\\Models\\SurveyParticipation\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Api/ResponseCollectionController.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\OrganizationalUnitResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/OrganizationalUnitResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\OrganizationalUnitResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/OrganizationalUnitResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\OrganizationalUnitResource\:\:\$is_active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/OrganizationalUnitResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\OrganizationalUnitResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/OrganizationalUnitResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\OrganizationalUnitResource\:\:\$parent_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/OrganizationalUnitResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\OrganizationalUnitResource\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/OrganizationalUnitResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$is_active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$organizationalUnits\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$public_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$roles\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\UserResource\:\:getAllPermissions\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$generated_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Jobs/GenerateReportExport.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/GenerateReportExport.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$metrics\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Jobs/GenerateReportExport.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Jobs/GenerateReportExport.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\NotificationHub\:\:send\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/GenerateReportExport.php
+
+		-
+			message: '#^Parameter \#2 \$provenance of method App\\Jobs\\GenerateReportExport\:\:csv\(\) expects array, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/GenerateReportExport.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$input_cost_micros_per_1k\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$max_cost_micros\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$max_input_tokens\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$max_output_tokens\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$model\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$output_cost_micros_per_1k\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$provider\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$rate_limit_per_minute\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Parameter \#1 \$config of method App\\Contracts\\AiProvider\:\:generate\(\) expects App\\Models\\AiProviderConfig, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Parameter \#1 \$snapshot of method App\\Services\\AiSafety\:\:projection\(\) expects App\\Models\\AggregateSnapshot, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\NotificationHub\:\:send\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Parameter \#2 \$template of method App\\Contracts\\AiProvider\:\:generate\(\) expects App\\Models\\AiPromptTemplate, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/RunAiInsight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$owner_unit_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/RunSurveyAnalysis.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$survey_period_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/RunSurveyAnalysis.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$targets\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/RunSurveyAnalysis.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Services\\SurveyAnalytics\:\:compute\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/RunSurveyAnalysis.php
+
+		-
+			message: '#^Cannot call method editable\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/InstrumentVersion.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$section\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Observers/InstrumentContentObserver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$version\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Observers/InstrumentContentObserver.php
+
+		-
+			message: '#^Cannot call method editable\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Observers/InstrumentVersionObserver.php
+
+		-
+			message: '#^Cannot call method configurationEditable\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Observers/SurveyMutationObserver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$responses_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Observers/SurveyTargetObserver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$state\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Observers/SurveyTargetObserver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$owner_unit_id\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Policies/InstrumentVersionPolicy.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Enums\\SurveyState\:\:Scheduled, App\\Enums\\SurveyState\:\:Active\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Policies/SurveyPolicy.php
+
+		-
+			message: '#^Cannot call method configurationEditable\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 3
+			path: app/Policies/SurveyPolicy.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 7
+			path: app/Policies/SurveyPolicy.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\SurveyState\:\:Approved will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Policies/SurveyPolicy.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\SurveyState\:\:Closed will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Policies/SurveyPolicy.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\SurveyState\:\:InReview will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Policies/SurveyPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$checksum\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/AiOrchestrator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/AiOrchestrator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$owner_unit_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/AiOrchestrator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$response_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/AiOrchestrator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$state\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/AiOrchestrator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$suppressed\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/AiOrchestrator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$survey_period_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/AiOrchestrator.php
+
+		-
+			message: '#^Offset ''categories'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AiSafety.php
+
+		-
+			message: '#^Offset ''indicators'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AiSafety.php
+
+		-
+			message: '#^Offset ''methodology_version'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AiSafety.php
+
+		-
+			message: '#^Offset ''overall'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AiSafety.php
+
+		-
+			message: '#^Offset ''response_rate'' on string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AiSafety.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$resource_version\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/FollowUpWorkflow.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:actions\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/FollowUpWorkflow.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\NotificationHub\:\:send\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/FollowUpWorkflow.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Services/InstrumentLifecycle.php
+
+		-
+			message: '#^Cannot call method editable\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/InstrumentLifecycle.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\InstrumentStatus\:\:InReview will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: app/Services/InstrumentLifecycle.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: app/Services/InstrumentLifecycle.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$indicators\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$max_value\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$min_value\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$missing_policy\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$na_allowed\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$points\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$position\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$questions\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$scale_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Support\\HigherOrderCollectionProxy\<string, Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\>\:\:\$indicators\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Support\\HigherOrderCollectionProxy\<string, Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\>\:\:\$questions\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 3
+			path: app/Services/InstrumentPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/InstrumentVersioning.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$indicators\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentVersioning.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$points\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentVersioning.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$questions\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/InstrumentVersioning.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:indicators\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/InstrumentVersioning.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:points\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/InstrumentVersioning.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:questions\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/InstrumentVersioning.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 9
+			path: app/Services/LeadershipDashboard.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/LeadershipDashboard.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Services/LeadershipDashboard.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\AggregateSnapshot\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/LeadershipDashboard.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Survey\:\:\$targets_sum_eligible_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/NotificationScheduler.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/NotificationScheduler.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/NotificationScheduler.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments float, array\{\-1, 1, 7\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/NotificationScheduler.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/NotificationScheduler.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:eachById\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: mixed, Closure\(App\\Models\\SurveyParticipation\)\: void given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/NotificationScheduler.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\NotificationHub\:\:send\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 3
+			path: app/Services/NotificationScheduler.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SurveyState\:\:Active will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/NotificationScheduler.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: app/Services/NotificationScheduler.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\OrganizationalUnit\:\:\$pivot\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/OrganizationalScope.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(App\\Models\\OrganizationalUnit\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/OrganizationalScope.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$instrument_version_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/QuestionBank.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:options\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/QuestionBank.php
+
+		-
+			message: '#^Empty array passed to foreach\.$#'
+			identifier: foreach.emptyArray
+			count: 1
+			path: app/Services/QuestionBank.php
+
+		-
+			message: '#^Method App\\Services\\QuestionBank\:\:addToSection\(\) should return App\\Models\\Question but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/QuestionBank.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$closes_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$instrumentVersion\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_exclusive\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$na_allowed\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$points\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$privacy_mode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$privacy_notice\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:reminderEligible\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Enums\\SurveyState\:\:Scheduled, App\\Enums\\SurveyState\:\:Active\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Cannot call method isFuture\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Cannot call method isPast\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Offset ''max'' on array\{\}\|string in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Offset ''min'' on array\{\}\|string in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Parameter \#1 \$key of method App\\Services\\ResponseCollection\:\:assertIdempotencyFingerprint\(\) expects App\\Models\\ResponseIdempotencyKey, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Parameter \#1 \$survey of method App\\Services\\ResponseCollection\:\:assertSurveyOpen\(\) expects App\\Models\\Survey, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Result of && is always true\.$#'
+			identifier: booleanAnd.alwaysTrue
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 4
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SurveyState\:\:Active will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Services/ResponseCollection.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$answers\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/SurveyAnalytics.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$categories\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/SurveyAnalytics.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$comparability_status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SurveyAnalytics.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$content_hash\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/SurveyAnalytics.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/SurveyAnalytics.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sections\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SurveyAnalytics.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$submitted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SurveyAnalytics.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$survey_template_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SurveyAnalytics.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/SurveyAnalytics.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Enums\\SurveyState\:\:Scheduled, App\\Enums\\SurveyState\:\:Active\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Cannot call method configurationEditable\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Cannot call method isFuture\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Property App\\Services\\SurveyLifecycle\:\:\$notifications is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 2
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SurveyState\:\:Active will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SurveyState\:\:Approved will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SurveyState\:\:Closed will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SurveyState\:\:InReview will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SurveyState\:\:Scheduled will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 7
+			path: app/Services/SurveyLifecycle.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$respondent_group_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SurveyPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SurveyPreflight.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$target_unit_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SurveyPreflight.php
+
+		-
+			message: '#^Cannot call method greaterThanOrEqualTo\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/SurveyPreflight.php

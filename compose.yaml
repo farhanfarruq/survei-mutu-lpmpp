@@ -1,0 +1,158 @@
+name: ${COMPOSE_PROJECT_NAME:-simutu_lpmpp}
+
+x-php-service: &php-service
+  image: simutu-lpmpp-php:local
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+    args:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+  working_dir: /var/www/backend
+  volumes:
+    - ./backend:/var/www/backend
+  networks:
+    - simutu
+
+services:
+  app:
+    <<: *php-service
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: ${APP_MEMORY_LIMIT:-2g}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php-fpm", "-t"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:stable-alpine
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 15s
+    mem_limit: ${NGINX_MEMORY_LIMIT:-256m}
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www/backend:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/api/v1/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - simutu
+
+  frontend:
+    image: node:24-bookworm-slim
+    mem_limit: ${FRONTEND_MEMORY_LIMIT:-2g}
+    working_dir: /app
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - "5173:5173"
+    environment:
+      HOME: /tmp
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./frontend:/app
+    networks:
+      - simutu
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    stop_grace_period: 60s
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-4g}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lpmpp_survey}
+      POSTGRES_USER: ${POSTGRES_USER:-lpmpp_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in root .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - simutu
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: ${REDIS_MEMORY_LIMIT:-1g}
+    command: redis-server --appendonly yes
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - simutu
+
+  horizon:
+    <<: *php-service
+    init: true
+    mem_limit: ${WORKER_MEMORY_LIMIT:-2g}
+    command: php artisan horizon
+    profiles: ["workers"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 90s
+    healthcheck:
+      test: ["CMD", "php", "artisan", "horizon:status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  scheduler:
+    <<: *php-service
+    init: true
+    mem_limit: ${SCHEDULER_MEMORY_LIMIT:-512m}
+    command: php artisan schedule:work
+    profiles: ["workers"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    mem_limit: ${MAILPIT_MEMORY_LIMIT:-512m}
+    ports:
+      - "8025:8025"
+    networks:
+      - simutu
+
+networks:
+  simutu:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
