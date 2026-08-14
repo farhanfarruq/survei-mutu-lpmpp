@@ -79,26 +79,39 @@ class RolePermissionSeeder extends Seeder
             'admin_lpmpp' => array_values(array_diff($permissions, [
                 'organization.scope.all',
                 'permissions.view',
+                'roles.view',
                 'roles.create',
                 'roles.update',
                 'system.horizon.view',
-                'validation.approve',
-                'campaign.approve',
-                'analysis.release',
-                'report.approve',
-                'ai.review',
-                'action.verify',
             ])),
-            'leader' => ['system.status.view', 'organizational-units.view', 'campaign.read', 'report.read', 'report.export', 'ai.read', 'notification.read', 'finding.read', 'action.read', 'follow-up.dashboard.read'],
-            'reviewer' => ['admin.panel.access', 'organizational-units.view', 'template.read', 'validation.create', 'validation.read', 'validation.update', 'validation.approve', 'campaign.read', 'campaign.approve', 'analysis.read', 'analysis.release', 'report.read', 'report.approve', 'ai.read', 'ai.review', 'notification.read', 'finding.read', 'action.read', 'action.verify', 'follow-up.dashboard.read'],
-            'analyst' => ['organizational-units.view', 'campaign.read', 'analysis.execute', 'analysis.read', 'report.read', 'report.create', 'report.export', 'ai.execute', 'ai.read', 'notification.read', 'finding.read', 'finding.create', 'finding.update', 'action.create', 'action.read', 'follow-up.dashboard.read'],
-            'pic' => ['organizational-units.view', 'notification.read', 'finding.read', 'action.read', 'action.update'],
-            'verifier' => ['organizational-units.view', 'notification.read', 'finding.read', 'action.read', 'action.verify'],
+            'leader' => [
+                'admin.panel.access',
+                'system.status.view',
+                'organizational-units.view',
+                'users.view',
+                'template.read',
+                'validation.read',
+                'campaign.read',
+                'analysis.read',
+                'report.read',
+                'ai.read',
+                'notification.read',
+                'finding.read',
+                'action.read',
+                'follow-up.dashboard.read',
+            ],
             'respondent' => ['notification.read'],
         ];
 
         foreach ($roles as $name => $grants) {
             Role::findOrCreate($name, 'web')->syncPermissions($grants);
         }
+
+        Role::query()
+            ->where('guard_name', 'web')
+            ->whereNotIn('name', array_keys($roles))
+            ->delete();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

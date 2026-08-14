@@ -54,7 +54,7 @@ class Phase13Test extends TestCase
         ])->assertUnprocessable()->assertJsonPath('code', 'ai_governance_blocked');
         $promptId = $this->actingAs($admin)->postJson('/api/v1/ai-prompt-templates', ['use_case' => 'comprehensive_insight', 'system_prompt' => 'Gunakan hanya agregat dan keluarkan JSON sesuai schema.', 'active' => true])->assertCreated()->json('data.id');
 
-        $outsideReviewer = $this->scopedUser('reviewer', OrganizationalUnit::factory()->create());
+        $outsideReviewer = $this->scopedUser('admin_lpmpp', OrganizationalUnit::factory()->create());
         $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId, 'reviewer_id' => $outsideReviewer->id])->assertUnprocessable()->assertJsonPath('code', 'ai_governance_blocked');
 
         $job = $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId, 'reviewer_id' => $reviewer->id])->assertAccepted();
@@ -111,16 +111,16 @@ class Phase13Test extends TestCase
     public function test_follow_up_enforces_scope_roles_versions_and_revision_loop(): void
     {
         $unit = OrganizationalUnit::factory()->create();
-        $analyst = $this->scopedUser('analyst', $unit);
-        $pic = $this->scopedUser('pic', $unit);
-        $verifier = $this->scopedUser('verifier', $unit);
+        $analyst = $this->scopedUser('admin_lpmpp', $unit);
+        $pic = $this->scopedUser('admin_lpmpp', $unit);
+        $verifier = $this->scopedUser('admin_lpmpp', $unit);
         $leader = $this->scopedUser('leader', $unit);
 
         $finding = $this->actingAs($analyst)->postJson('/api/v1/findings', ['source_type' => 'manual', 'owner_unit_id' => $unit->id, 'title' => 'Waktu layanan rendah', 'description' => 'Hasil evaluasi proses internal.', 'source_evidence' => 'Notulen rapat mutu nomor 10.', 'severity' => 'high', 'due_on' => now()->addMonth()->toDateString()])->assertCreated();
         $findingId = $finding->json('data.id');
         $this->actingAs($leader)->getJson("/api/v1/findings/{$findingId}")->assertOk();
         $this->actingAs($leader)->postJson('/api/v1/findings', [])->assertForbidden();
-        $this->actingAs($analyst)->getJson("/api/v1/follow-up-assignees?unit_id={$unit->id}")->assertOk()->assertJsonCount(2, 'data');
+        $this->actingAs($analyst)->getJson("/api/v1/follow-up-assignees?unit_id={$unit->id}")->assertOk()->assertJsonCount(3, 'data');
         $action = $this->actingAs($analyst)->postJson("/api/v1/findings/{$findingId}/actions", ['pic_user_id' => $pic->id, 'verifier_user_id' => $verifier->id, 'title' => 'Perbaiki SLA', 'root_cause' => 'Alur persetujuan terlalu panjang.', 'plan' => 'Ringkas alur dan ukur ulang.', 'expected_output' => 'SLA maksimal dua hari.', 'due_on' => now()->addWeeks(2)->toDateString()])->assertCreated();
         $actionId = $action->json('data.id');
         $this->actingAs($pic)->withHeader('If-Match', '"1"')->patchJson("/api/v1/follow-up-actions/{$actionId}", ['state' => 'accepted'])->assertOk()->assertJsonPath('data.state', 'accepted');
@@ -143,8 +143,8 @@ class Phase13Test extends TestCase
     private function releasedAnalysis(): array
     {
         $unit = OrganizationalUnit::factory()->create();
-        $analyst = $this->scopedUser('analyst', $unit);
-        $reviewer = $this->scopedUser('reviewer', $unit);
+        $analyst = $this->scopedUser('admin_lpmpp', $unit);
+        $reviewer = $this->scopedUser('admin_lpmpp', $unit);
         $leader = $this->scopedUser('leader', $unit);
         $survey = Survey::factory()->create(['owner_unit_id' => $unit->id, 'state' => SurveyState::Closed]);
         $run = AnalysisRun::create(['survey_id' => $survey->id, 'requested_by' => $analyst->id, 'state' => 'completed', 'input_hash' => hash('sha256', 'phase13'), 'formula_version' => 'v1', 'parameters' => [], 'started_at' => now(), 'completed_at' => now()]);

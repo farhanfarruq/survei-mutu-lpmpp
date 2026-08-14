@@ -2,15 +2,17 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Dashboard;
+use App\Http\Controllers\RedirectToUnifiedLoginController;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
+use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -26,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(RedirectToUnifiedLoginController::class)
             ->colors([
                 'primary' => Color::Sky,
             ])
@@ -36,8 +38,12 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
+            ->navigationItems([
+                NavigationItem::make('Buka Dashboard Pimpinan')
+                    ->url(fn (): string => rtrim((string) config('app.frontend_url'), '/').'/app/analytics')
+                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                    ->group('Akses')
+                    ->visible(fn (): bool => auth()->user()?->hasRole('leader') ?? false),
             ])
             ->middleware([
                 EncryptCookies::class,

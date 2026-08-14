@@ -33,10 +33,12 @@ Route::prefix('v1')->group(function (): void {
             ->middleware(['permission:organizational-units.view', 'org.scope'])
             ->name('api.organizational-units.show');
 
-        Route::get('/surveys/eligible', [ResponseCollectionController::class, 'eligible']);
-        Route::get('/surveys/{survey}/respondent-detail', [ResponseCollectionController::class, 'detail']);
-        Route::post('/surveys/{survey}/respondent-session', [ResponseCollectionController::class, 'start']);
-        Route::get('/response-history', [ResponseCollectionController::class, 'history']);
+        Route::middleware('role:respondent')->group(function (): void {
+            Route::get('/surveys/eligible', [ResponseCollectionController::class, 'eligible']);
+            Route::get('/surveys/{survey}/respondent-detail', [ResponseCollectionController::class, 'detail']);
+            Route::post('/surveys/{survey}/respondent-session', [ResponseCollectionController::class, 'start']);
+            Route::get('/response-history', [ResponseCollectionController::class, 'history']);
+        });
         Route::post('/surveys/{survey}/invitations', [ResponseCollectionController::class, 'issueInvitation']);
         Route::get('/surveys/{survey}/collection-summary', [ResponseCollectionController::class, 'collectionSummary']);
 
@@ -61,7 +63,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/ai-results/{aiResult}/review-decisions', [AiController::class, 'review'])->middleware('permission:ai.review');
 
         Route::get('/notifications', [NotificationController::class, 'index'])->middleware('permission:notification.read');
-        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->middleware('permission:notification.read');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->middleware(['permission:notification.read', 'role:respondent']);
 
         Route::get('/findings', [FollowUpController::class, 'index'])->middleware('permission:finding.read');
         Route::get('/follow-up-assignees', [FollowUpController::class, 'assignees'])->middleware('permission:action.create');

@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import FormField from '@/components/ui/FormField.vue'
+import { destinationAfterLogin } from '@/navigation'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -16,8 +17,10 @@ const form = reactive({ email: '', password: '', remember: false })
 async function submit() {
   try {
     await auth.login(form.email, form.password, form.remember)
-    const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/app') ? route.query.redirect : '/app'
-    await router.replace(redirect)
+    const destination = destinationAfterLogin(auth.user, route.query.redirect)
+
+    if (destination.external) window.location.assign(destination.to)
+    else await router.replace(destination.to)
   } catch {
     // The store exposes a normalized, non-sensitive message next to the form.
   }

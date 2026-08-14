@@ -9,9 +9,11 @@ import VChart from 'vue-echarts'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import { normalizeApiError } from '@/services/api'
 import { fetchLeadershipDashboard, requestReportExport, type DashboardSeries, type LeadershipDashboard } from '@/services/analytics'
+import { useAuthStore } from '@/stores/auth'
 
 use([BarChart, LineChart, GridComponent, TooltipComponent, SVGRenderer])
 
+const auth = useAuthStore()
 const dashboard = ref<LeadershipDashboard | null>(null)
 const baselineSeries = ref<DashboardSeries[]>([])
 const loading = ref(true)
@@ -81,7 +83,7 @@ onMounted(() => load())
   <section class="analytics-page" aria-labelledby="analytics-title">
     <div class="page-heading">
       <div><p class="eyebrow">Analytics & reporting</p><h1 id="analytics-title" tabindex="-1">Dashboard eksekutif</h1><p class="lede">Hanya agregat released dalam scope organisasi Anda. Jawaban individual tidak tersedia di halaman ini.</p></div>
-      <div class="export-controls"><label>Format<select v-model="exportFormat"><option value="csv">CSV</option><option value="json">JSON</option></select></label><button class="button button-secondary" :disabled="!dashboard?.summary" @click="exportReport">Buat ekspor</button></div>
+      <div v-if="auth.can('report.export')" class="export-controls"><label>Format<select v-model="exportFormat"><option value="csv">CSV</option><option value="json">JSON</option></select></label><button class="button button-secondary" :disabled="!dashboard?.summary" @click="exportReport">Buat ekspor</button></div>
     </div>
 
     <form class="analytics-filters panel" aria-label="Filter dashboard" @submit.prevent="load(false)">

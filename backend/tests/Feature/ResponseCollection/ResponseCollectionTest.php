@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\ResponseCollection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ResponseCollectionTest extends TestCase
@@ -85,6 +86,7 @@ class ResponseCollectionTest extends TestCase
 
         [$survey, $eligible] = $this->fixture();
         $outsider = User::factory()->create();
+        $outsider->assignRole('respondent');
         $this->actingAs($outsider)
             ->postJson("/api/v1/surveys/{$survey->id}/respondent-session")
             ->assertNotFound();
@@ -195,12 +197,25 @@ class ResponseCollectionTest extends TestCase
             ->assertJsonPath('code', 'response_already_started');
     }
 
+    public function test_leader_cannot_enter_or_start_the_respondent_flow(): void
+    {
+        [$survey] = $this->fixture();
+        Role::findOrCreate('leader');
+        $leader = User::factory()->create();
+        $leader->assignRole('leader');
+
+        $this->actingAs($leader)->getJson('/api/v1/surveys/eligible')->assertForbidden();
+        $this->actingAs($leader)->postJson("/api/v1/surveys/{$survey->id}/respondent-session")->assertForbidden();
+    }
+
     /** @return array{Survey, User, array<string, mixed>} */
     private function fixture(array $surveyAttributes = []): array
     {
         $unit = OrganizationalUnit::factory()->create();
         $creator = User::factory()->create();
         $respondent = User::factory()->create();
+        Role::findOrCreate('respondent');
+        $respondent->assignRole('respondent');
         $respondent->organizationalUnits()->attach($unit, ['scope_mode' => 'self', 'is_primary' => true]);
         $template = SurveyTemplate::factory()->create(['owner_unit_id' => $unit->id, 'created_by' => $creator->id]);
         $version = InstrumentVersion::factory()->create(['survey_template_id' => $template->id, 'created_by' => $creator->id]);

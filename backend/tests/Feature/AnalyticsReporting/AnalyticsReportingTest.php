@@ -54,7 +54,7 @@ class AnalyticsReportingTest extends TestCase
     {
         [$survey, $analyst, $reviewer] = $this->fixture(9);
         $other = User::factory()->create();
-        $other->assignRole('analyst');
+        $other->assignRole('admin_lpmpp');
         $otherUnit = OrganizationalUnit::factory()->create();
         $other->organizationalUnits()->attach($otherUnit, ['scope_mode' => 'self', 'is_primary' => true]);
 
@@ -98,8 +98,8 @@ class AnalyticsReportingTest extends TestCase
         $analyst = User::factory()->create();
         $reviewer = User::factory()->create();
         $leader = User::factory()->create();
-        $analyst->assignRole('analyst');
-        $reviewer->assignRole('reviewer');
+        $analyst->assignRole('admin_lpmpp');
+        $reviewer->assignRole('admin_lpmpp');
         $leader->assignRole('leader');
         foreach ([$analyst, $reviewer, $leader] as $user) {
             $user->organizationalUnits()->attach($unit, ['scope_mode' => 'self', 'is_primary' => true]);

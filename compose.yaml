@@ -113,7 +113,7 @@ services:
     init: true
     mem_limit: ${WORKER_MEMORY_LIMIT:-2g}
     command: php artisan horizon
-    profiles: ["workers"]
+    # profiles: ["workers"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -132,7 +132,7 @@ services:
     init: true
     mem_limit: ${SCHEDULER_MEMORY_LIMIT:-512m}
     command: php artisan schedule:work
-    profiles: ["workers"]
+    # profiles: ["workers"]
     depends_on:
       postgres:
         condition: service_healthy

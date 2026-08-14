@@ -15,8 +15,10 @@ type ProblemPayload = {
   errors?: Array<{ pointer?: string; detail?: string }>
 }
 
+export const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000').replace(/\/$/, '')
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000',
+  baseURL: apiBaseUrl,
   withCredentials: true,
   withXSRFToken: true,
   headers: {

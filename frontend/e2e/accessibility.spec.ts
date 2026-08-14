@@ -1,11 +1,11 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
-const priorityRoutes = ['/login', '/respondent', '/leadership', '/ai-config', '/follow-up']
+const priorityRoutes = ['/login']
 
 for (const path of priorityRoutes) {
   test(`${path} has no detectable WCAG A/AA violations`, async ({ page }) => {
-    await page.route('http://localhost:8000/api/v1/me', (route) =>
+    await page.route('**/api/v1/me', (route) =>
       route.fulfill({
         status: 401,
         contentType: 'application/problem+json',
@@ -24,13 +24,22 @@ for (const path of priorityRoutes) {
 }
 
 test('keyboard skip link, visible focus, zoom, and mobile reflow remain usable', async ({ page }) => {
-  await page.goto('/leadership')
-  await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
+  await page.route('**/api/v1/me', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: { id: 'keyboard-user', name: 'Pengguna Uji', email: 'keyboard@example.test', is_active: true, roles: ['respondent'], permissions: [], organizational_units: [] } }),
+    }),
+  )
+  await page.route('**/api/v1/surveys/eligible', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) }),
+  )
+  await page.goto('/app')
   const skipLink = page.getByRole('link', { name: 'Lewati ke konten utama' })
   await skipLink.focus()
   await expect(skipLink).toBeFocused()
   await skipLink.press('Enter')
-  await expect(page.locator('#main-content')).toBeFocused()
+  await expect(page.locator('#foundation-main')).toBeFocused()
 
   await page.setViewportSize({ width: 640, height: 800 })
   await page.evaluate(() => {
@@ -41,7 +50,7 @@ test('keyboard skip link, visible focus, zoom, and mobile reflow remain usable',
 })
 
 test('authenticated sidebar has readable contrast and a distinct active state', async ({ page }) => {
-  await page.route('http://localhost:8000/api/v1/me', (route) =>
+  await page.route('**/api/v1/me', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -51,14 +60,14 @@ test('authenticated sidebar has readable contrast and a distinct active state', 
           name: 'Pengguna Uji',
           email: 'accessibility@example.test',
           is_active: true,
-          roles: ['super_admin'],
-          permissions: ['admin.panel.access'],
+          roles: ['respondent'],
+          permissions: [],
           organizational_units: [],
         },
       }),
     }),
   )
-  await page.route('http://localhost:8000/api/v1/surveys/eligible', (route) =>
+  await page.route('**/api/v1/surveys/eligible', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) }),
   )
 

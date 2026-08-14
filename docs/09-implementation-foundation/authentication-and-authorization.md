@@ -16,12 +16,9 @@ Login gagal selalu memakai pesan generik agar status email tidak dapat dienumera
 | Role | Tujuan awal |
 |---|---|
 | `super_admin` | Administrasi platform dengan scope global yang diberikan eksplisit. |
-| `admin_lpmpp` | Administrasi operasional LPMPP pada unit yang ditugaskan. |
-| `leader` | Akses pimpinan sesuai scope; belum ada dashboard bisnis Phase 09. |
-| `reviewer` | Review metodologi/instrumen pada phase berikutnya. |
-| `pic` | Pelaksana tindak lanjut pada phase berikutnya. |
-| `verifier` | Verifikasi bukti pada phase berikutnya. |
-| `respondent` | Akses responden pada phase berikutnya. |
+| `admin_lpmpp` | Administrasi operasional, analisis, review, serta pelaksanaan dan verifikasi tindak lanjut pada unit yang ditugaskan. |
+| `leader` | Dashboard agregat dan pemantauan tindak lanjut sesuai scope organisasi; tanpa jawaban individual. |
+| `respondent` | Mengisi survei yang eligible dan melihat riwayat respons yang diizinkan. |
 
 Role tidak otomatis memperluas data scope. Efektivitas akses adalah irisan: akun aktif, permission, organizational scope, policy object, dan state object bila kelak tersedia.
 

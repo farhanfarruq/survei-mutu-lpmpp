@@ -5,6 +5,7 @@ namespace App\Filament\Resources\InstrumentVersions\Pages;
 use App\Enums\InstrumentStatus;
 use App\Exceptions\DomainRuleViolation;
 use App\Filament\Resources\InstrumentVersions\InstrumentVersionResource;
+use App\Models\InstrumentVersion;
 use App\Services\InstrumentLifecycle;
 use App\Services\InstrumentVersioning;
 use Filament\Actions\Action;
@@ -17,6 +18,14 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewInstrumentVersion extends ViewRecord
 {
     protected static string $resource = InstrumentVersionResource::class;
+
+    public function getRecord(): InstrumentVersion
+    {
+        /** @var InstrumentVersion $record */
+        $record = parent::getRecord();
+
+        return $record->loadMissing('sections.questions.scale');
+    }
 
     protected function getHeaderActions(): array
     {

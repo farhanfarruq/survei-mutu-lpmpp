@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LogOut, Menu, ShieldCheck, X } from '@lucide/vue'
+import { LogOut, Menu, X } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -10,6 +10,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const drawerOpen = ref(false)
 const navigation = computed(() => navigationFor(auth.user))
+const homeDestination = computed(() => auth.user?.roles.includes('leader') ? '/app/analytics' : '/app')
 
 async function logout() {
   await auth.logout()
@@ -26,8 +27,8 @@ function focusMain() {
   <div class="foundation-shell">
     <header class="foundation-topbar">
       <button class="icon-button foundation-menu" type="button" aria-label="Buka navigasi" @click="drawerOpen = true"><Menu /></button>
-      <RouterLink class="brand-button" to="/app"><span class="brand-mark" aria-hidden="true">SM</span><span><strong>SIMUTU</strong><small>Implementation foundation</small></span></RouterLink>
-      <div class="foundation-user"><span><strong>{{ auth.user?.name }}</strong><small>{{ auth.user?.roles.join(', ') }}</small></span><button class="button button-quiet" type="button" @click="logout"><LogOut :size="17" aria-hidden="true" /> Keluar</button></div>
+      <RouterLink class="brand-button" :to="homeDestination"><span class="brand-mark" aria-hidden="true">SM</span><span><strong>SIMUTU</strong><small>Implementation foundation</small></span></RouterLink>
+      <div class="foundation-user"><span><strong>{{ auth.user?.name }}</strong><small>{{ auth.user?.roles.join(', ') }}</small></span><button class="button button-quiet foundation-topbar-logout" type="button" @click="logout"><LogOut :size="17" aria-hidden="true" /> Keluar</button></div>
     </header>
     <aside class="foundation-sidebar">
       <nav aria-label="Navigasi aplikasi">
@@ -37,7 +38,7 @@ function focusMain() {
           <RouterLink v-else :to="item.to">{{ item.label }}</RouterLink>
         </template>
       </nav>
-      <div class="sidebar-note"><ShieldCheck :size="20" aria-hidden="true" /><div><strong>Session aman</strong><span>Fortify + Sanctum cookie</span></div></div>
+      <button class="button sidebar-logout" type="button" @click="logout"><LogOut :size="17" aria-hidden="true" /> Keluar</button>
     </aside>
     <main id="foundation-main" class="foundation-content" tabindex="-1"><RouterView /></main>
 

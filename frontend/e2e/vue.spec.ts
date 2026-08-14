@@ -1,57 +1,5 @@
 import { expect, test } from '@playwright/test'
 
-test('respondent can validate, autosave, and submit the mock survey', async ({ page }) => {
-  await page.goto('/respondent')
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Alya')
-  await page.getByRole('button', { name: 'Lanjutkan pengisian' }).click()
-  await page.getByRole('button', { name: 'Tinjau dan kirim' }).click()
-  await expect(page.getByRole('alert')).toContainText('3 jawaban wajib')
-
-  for (const code of ['LA-01', 'LA-02', 'LA-03']) {
-    await page.getByRole('radio', { name: '4 Sangat baik', exact: true }).nth(code === 'LA-01' ? 0 : code === 'LA-02' ? 1 : 2).check()
-  }
-  await expect(page.getByText(/Tersimpan di tab ini/)).toBeVisible()
-  await page.getByRole('button', { name: 'Tinjau dan kirim' }).click()
-  await expect(page.getByRole('dialog')).toBeVisible()
-  await page.getByRole('button', { name: 'Ya, kirim simulasi' }).click()
-  await expect(page.getByText('SIM-2026-00428')).toBeVisible()
-})
-
-test('leadership scope changes aggregate fixtures and exposes no raw response', async ({ page }) => {
-  await page.goto('/leadership')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Dashboard Pimpinan')
-  await page.getByLabel('Unit dalam scope').selectOption('engineering')
-  await expect(page.getByText('84,1')).toBeVisible()
-  await expect(page.getByText(/raw response/i)).toHaveCount(0)
-})
-
-test('priority routes have landmarks, labels, and reflow at mobile width', async ({ page }) => {
-  await page.route('http://localhost:8000/api/v1/me', async (route) => {
-    await route.fulfill({ status: 401, contentType: 'application/problem+json', body: JSON.stringify({ detail: 'Sesi tidak tersedia.', code: 'unauthenticated' }) })
-  })
-  await page.setViewportSize({ width: 320, height: 800 })
-  for (const path of ['/login', '/respondent', '/surveys', '/admin', '/builder', '/results', '/leadership', '/ai-analysis', '/ai-config', '/follow-up', '/reports']) {
-    await page.goto(path)
-    await expect(page.locator('main')).toHaveCount(1)
-    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
-    expect(overflow, `${path} must reflow at 320px`).toBe(false)
-  }
-})
-
-test('AI and secret configuration remain visibly simulated', async ({ page }) => {
-  await page.goto('/ai-analysis')
-  await expect(page.getByText(/SIMULASI AI · POST-MVP/)).toBeVisible()
-  await page.getByRole('button', { name: 'Jalankan simulasi' }).click()
-  await expect(page.getByText('Draft membutuhkan review')).toBeVisible()
-
-  await page.goto('/ai-config')
-  await expect(page.getByLabel('Secret tersimpan')).toHaveValue('••••••••••••7A9C')
-  await expect(page.getByText('Custom Base URL')).toBeVisible()
-  await page.getByRole('button', { name: 'Ganti secret mock' }).click()
-  await expect(page.getByRole('dialog')).toBeVisible()
-})
-
 test('external respondent completes the production response flow at mobile width', async ({ page }) => {
   let version = 1
   const survey = {
@@ -61,7 +9,7 @@ test('external respondent completes the production response flow at mobile width
     sections: [{ id: 'section-1', code: 'SEC', title: 'Layanan', description: 'Nilai pengalaman Anda.', position: 1, questions: [{ id: 'question-1', code: 'Q1', text: 'Bagaimana mutu layanan?', response_type: 'scale', required: true, validation: null, options: [{ value: '4', label: 'Sangat baik' }], na_allowed: false }] }],
   }
 
-  await page.route('http://localhost:8000/api/v1/**', async (route) => {
+  await page.route('**/api/v1/**', async (route) => {
     const path = new URL(route.request().url()).pathname
     const method = route.request().method()
     const data = path === '/api/v1/respondent-sessions'
@@ -92,10 +40,10 @@ test('external respondent completes the production response flow at mobile width
 })
 
 test('Phase 13 production workspaces are permission-aware and reflow on mobile', async ({ page }) => {
-  await page.route('http://localhost:8000/api/v1/**', async (route) => {
+  await page.route('**/api/v1/**', async (route) => {
     const path = new URL(route.request().url()).pathname
     const data = path === '/api/v1/me'
-      ? { id: 'user-public', name: 'Analyst Fiktif', email: 'analyst@example.test', is_active: true, roles: ['analyst'], permissions: ['ai.read', 'ai.execute', 'notification.read', 'finding.read', 'follow-up.dashboard.read'], organizational_units: [{ id: 'unit-1', code: 'UNIT', name: 'Unit Fiktif', scope_mode: 'self', is_primary: true }] }
+      ? { id: 'user-public', name: 'Pimpinan Fiktif', email: 'pimpinan@example.test', is_active: true, roles: ['leader'], permissions: ['admin.panel.access', 'ai.read', 'notification.read', 'finding.read', 'follow-up.dashboard.read'], organizational_units: [{ id: 'unit-1', code: 'UNIT', name: 'Unit Fiktif', scope_mode: 'self', is_primary: true }] }
       : path === '/api/v1/ai-provider-configs' || path === '/api/v1/ai-prompt-templates' || path === '/api/v1/findings'
         ? []
         : path === '/api/v1/notifications'

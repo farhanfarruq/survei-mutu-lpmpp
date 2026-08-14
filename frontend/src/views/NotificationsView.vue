@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import { normalizeApiError } from '@/services/api'
 import { phase13Api, type AppNotification } from '@/services/phase13'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
 const items = ref<AppNotification[]>([])
 const unread = ref(0)
 const loading = ref(true)
 const error = ref('')
+const canMarkRead = computed(() => auth.user?.roles.includes('respondent') ?? false)
 
 async function load() {
   loading.value = true
@@ -40,7 +43,7 @@ onMounted(load)
     <ul v-else class="phase13-list" aria-live="polite">
       <li v-for="item in items" :key="item.id" :class="{ unread: !item.read_at }">
         <div><small>{{ item.type.replaceAll('_', ' ') }}</small><h2>{{ item.title }}</h2><p>{{ item.message }}</p><time :datetime="item.created_at">{{ new Date(item.created_at).toLocaleString('id-ID') }}</time></div>
-        <div class="phase13-actions"><RouterLink v-if="item.route" class="button button-secondary" :to="item.route" @click="markRead(item)">Buka</RouterLink><button v-if="!item.read_at" class="button button-quiet" @click="markRead(item)">Tandai dibaca</button></div>
+        <div class="phase13-actions"><RouterLink v-if="item.route" class="button button-secondary" :to="item.route" @click="canMarkRead && markRead(item)">Buka</RouterLink><button v-if="canMarkRead && !item.read_at" class="button button-quiet" @click="markRead(item)">Tandai dibaca</button></div>
       </li>
     </ul>
   </section>

@@ -15,11 +15,13 @@ Buka URL HTTPS organisasi lalu masuk memakai akun yang disediakan administrator 
 
 ## Analytics dan report
 
-Analyst menjalankan deterministic analysis. Periksa response/eligible count, threshold, limitations, method/formula version, dan timestamp. Release snapshot hanya setelah review. Dashboard dan export hanya memakai released aggregate; suppressed cell tidak boleh ditebak, digabung ulang, atau diperlakukan sebagai nol. Export bersifat expiring dan link download satu kali.
+Admin LPMPP menjalankan deterministic analysis. Periksa response/eligible count, threshold, limitations, method/formula version, dan timestamp. Release snapshot hanya setelah review oleh Admin LPMPP lain. Dashboard dan export hanya memakai released aggregate; suppressed cell tidak boleh ditebak, digabung ulang, atau diperlakukan sebagai nol. Export bersifat expiring dan link download satu kali.
+
+Dashboard Mutu pada panel administrasi merangkum survei aktif, tingkat respons, indeks mutu terbaru, keterlambatan tindak lanjut, tren antarperiode, capaian kategori, dan temuan prioritas. Informasi teknis database, Redis, serta worker tidak ditampilkan kepada pengguna; pemeriksaannya tetap dilakukan melalui healthcheck, log, dan monitoring operasi.
 
 ## AI governance
 
-Hanya super admin mengatur provider/model/base URL allowlist dan secret. Tampilan secret selalu masked. Mulai dari disabled, jalankan connection test, tetapkan token/cost/timeout/rate budget, dan gunakan prompt template versioned. AI hanya membuat draft dari scope agregat; reviewer manusia wajib edit/approve/reject. Jangan gunakan AI untuk statistik dasar atau perubahan data sumber.
+Hanya super admin mengatur provider/model/base URL allowlist dan secret. Tampilan secret selalu masked. Mulai dari disabled, jalankan connection test, tetapkan token/cost/timeout/rate budget, dan gunakan prompt template versioned. AI hanya membuat draft dari scope agregat; Admin LPMPP lain wajib edit/approve/reject. Jangan gunakan AI untuk statistik dasar atau perubahan data sumber.
 
 ## Temuan dan tindak lanjut
 
@@ -34,4 +36,3 @@ Periksa in-app notification, mail log/provider status, failed deliveries, Horizo
 - Mingguan: inactive/privileged user, overdue follow-up, queue failure/age, export expiry, AI usage/cost/failure.
 - Bulanan: role/scope recertification, restore drill, dependency/image advisory, prompt/provider review.
 - Per periode: instrument/version approval, target/threshold/privacy notice, comparison eligibility, archive/retention.
-

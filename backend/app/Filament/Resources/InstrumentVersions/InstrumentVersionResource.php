@@ -37,9 +37,11 @@ class InstrumentVersionResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Manajemen Survei';
 
-    protected static ?string $navigationLabel = 'Versi Instrumen';
+    protected static ?string $navigationLabel = 'Daftar Formulir';
 
-    protected static ?string $modelLabel = 'versi instrumen';
+    protected static ?string $modelLabel = 'formulir';
+
+    protected static ?string $pluralModelLabel = 'formulir';
 
     public static function form(Schema $schema): Schema
     {
@@ -97,7 +99,8 @@ class InstrumentVersionResource extends Resource
     {
         $ids = app(OrganizationalScope::class)->accessibleUnitIds(auth()->user());
 
-        return parent::getEloquentQuery()->whereHas('template', fn (Builder $query) => $query->whereIn('owner_unit_id', $ids));
+        return parent::getEloquentQuery()
+            ->whereHas('template', fn (Builder $query) => $query->whereIn('owner_unit_id', $ids));
     }
 
     public static function getPages(): array
