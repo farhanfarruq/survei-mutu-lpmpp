@@ -29,7 +29,8 @@ describe('auth store', () => {
     const user: AuthUser = {
       id: 'user-1',
       name: 'Test User',
-      email: 'test@example.test',
+      identity_number: '20260001',
+      account_type: 'student',
       is_active: true,
       roles: ['super_admin'],
       permissions: [],
@@ -41,10 +42,49 @@ describe('auth store', () => {
     const auth = useAuthStore()
 
     await auth.initialize()
-    await auth.login(user.email, 'unused', false)
+    await auth.login(user.identity_number ?? '', 'unused', false)
 
     expect(auth.user).toEqual(user)
     expect(mocks.initializeCsrf).not.toHaveBeenCalled()
     expect(mocks.post).not.toHaveBeenCalled()
+  })
+
+  it('registers a respondent with identity number and program study', async () => {
+    const user: AuthUser = {
+      id: 'user-2',
+      name: 'Mahasiswa Baru',
+      identity_number: '20260002',
+      account_type: 'student',
+      is_active: true,
+      roles: ['respondent'],
+      permissions: [],
+      organizational_units: [],
+    }
+    mocks.initializeCsrf.mockResolvedValue()
+    mocks.post.mockResolvedValue({})
+    mocks.get.mockResolvedValue({ data: { data: user } })
+    const auth = useAuthStore()
+
+    await auth.register({
+      name: user.name,
+      identity_number: user.identity_number ?? '',
+      account_type: 'student',
+      organizational_unit_id: 'program-1',
+      password: 'ValidPassphrase!123',
+      password_confirmation: 'ValidPassphrase!123',
+    })
+
+    expect(mocks.initializeCsrf).toHaveBeenCalledOnce()
+    expect(mocks.post).toHaveBeenNthCalledWith(
+      1,
+      '/api/v1/auth/register',
+      expect.objectContaining({ identity_number: '20260002' }),
+    )
+    expect(mocks.post).toHaveBeenNthCalledWith(2, '/api/v1/auth/login', {
+      identity_number: '20260002',
+      password: 'ValidPassphrase!123',
+      remember: false,
+    })
+    expect(auth.user).toEqual(user)
   })
 })

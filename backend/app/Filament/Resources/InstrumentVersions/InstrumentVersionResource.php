@@ -2,18 +2,16 @@
 
 namespace App\Filament\Resources\InstrumentVersions;
 
+use App\Enums\InstrumentStatus;
 use App\Filament\Resources\InstrumentVersions\Pages\CreateInstrumentVersion;
 use App\Filament\Resources\InstrumentVersions\Pages\EditInstrumentVersion;
 use App\Filament\Resources\InstrumentVersions\Pages\ListInstrumentVersions;
 use App\Filament\Resources\InstrumentVersions\Pages\ViewInstrumentVersion;
-use App\Filament\Resources\InstrumentVersions\RelationManagers\CategoriesRelationManager;
-use App\Filament\Resources\InstrumentVersions\RelationManagers\ScalesRelationManager;
 use App\Filament\Resources\InstrumentVersions\RelationManagers\SectionsRelationManager;
 use App\Models\InstrumentVersion;
 use App\Models\SurveyTemplate;
 use App\Services\OrganizationalScope;
 use BackedEnum;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -37,7 +35,7 @@ class InstrumentVersionResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Manajemen Survei';
 
-    protected static ?string $navigationLabel = 'Daftar Formulir';
+    protected static ?string $navigationLabel = 'Formulir Saya';
 
     protected static ?string $modelLabel = 'formulir';
 
@@ -62,18 +60,16 @@ class InstrumentVersionResource extends Resource
     {
         return $schema->components([
             TextEntry::make('template.name')->label('Template'),
-            TextEntry::make('version_label')->label('Versi')->state(fn (InstrumentVersion $record) => $record->versionLabel()),
-            TextEntry::make('status')->badge(),
-            TextEntry::make('comparability_status')->label('Komparabilitas')->badge(),
-            TextEntry::make('change_reason')->label('Alasan perubahan')->columnSpanFull(),
-            RepeatableEntry::make('sections')->label('Preview kuesioner')->schema([
+            TextEntry::make('status')->label('Status formulir')->badge()->formatStateUsing(fn (InstrumentStatus|string $state): string => static::statusLabel($state)),
+            TextEntry::make('version_label')->label('Versi')->state(fn (InstrumentVersion $record) => $record->versionLabel())->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+            TextEntry::make('comparability_status')->label('Komparabilitas')->badge()->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+            TextEntry::make('change_reason')->label('Catatan perubahan')->columnSpanFull()->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+            RepeatableEntry::make('sections')->label('Isi formulir')->schema([
                 TextEntry::make('title')->label('Bagian'),
                 TextEntry::make('description')->label('Petunjuk'),
                 RepeatableEntry::make('questions')->label('Pertanyaan')->schema([
-                    TextEntry::make('code')->label('Kode'),
-                    TextEntry::make('item_text')->label('Item'),
-                    TextEntry::make('response_type')->label('Jenis jawaban')->badge(),
-                    TextEntry::make('scale.name')->label('Skala')->placeholder('Tidak memakai skala'),
+                    TextEntry::make('item_text')->label('Pertanyaan'),
+                    TextEntry::make('response_type')->label('Jenis jawaban')->badge()->formatStateUsing(fn (string $state): string => static::responseTypeLabel($state)),
                 ])->columns(2)->columnSpanFull(),
             ])->columns(2)->columnSpanFull(),
         ])->columns(2);
@@ -82,17 +78,19 @@ class InstrumentVersionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('template.code')->label('Template')->searchable(),
-            TextColumn::make('version')->label('Versi')->state(fn (InstrumentVersion $record) => $record->versionLabel()),
-            TextColumn::make('status')->badge()->sortable(),
-            TextColumn::make('comparability_status')->label('Komparabilitas')->badge(),
+            TextColumn::make('template.name')->label('Nama formulir')->searchable()->sortable(),
+            TextColumn::make('status')->label('Status')->badge()->sortable()->formatStateUsing(fn (InstrumentStatus|string $state): string => static::statusLabel($state)),
             TextColumn::make('updated_at')->label('Diperbarui')->dateTime()->sortable(),
-        ])->recordActions([ViewAction::make(), EditAction::make()->visible(fn (InstrumentVersion $record) => $record->isEditable())]);
+            TextColumn::make('version')->label('Versi')->state(fn (InstrumentVersion $record) => $record->versionLabel())->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+            TextColumn::make('comparability_status')->label('Komparabilitas')->badge()->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+        ])->recordActions([
+            ViewAction::make()->label('Lihat'),
+        ]);
     }
 
     public static function getRelations(): array
     {
-        return [CategoriesRelationManager::class, ScalesRelationManager::class, SectionsRelationManager::class];
+        return [SectionsRelationManager::class];
     }
 
     public static function getEloquentQuery(): Builder
@@ -106,5 +104,32 @@ class InstrumentVersionResource extends Resource
     public static function getPages(): array
     {
         return ['index' => ListInstrumentVersions::route('/'), 'create' => CreateInstrumentVersion::route('/create'), 'view' => ViewInstrumentVersion::route('/{record}'), 'edit' => EditInstrumentVersion::route('/{record}/edit')];
+    }
+
+    private static function statusLabel(InstrumentStatus|string $status): string
+    {
+        $status = $status instanceof InstrumentStatus ? $status->value : $status;
+
+        return match ($status) {
+            'draft' => 'Draf',
+            'in_review' => 'Menunggu pemeriksaan',
+            'returned' => 'Perlu diperbaiki',
+            'approved' => 'Disetujui',
+            'retired' => 'Tidak digunakan',
+            default => $status,
+        };
+    }
+
+    private static function responseTypeLabel(string $type): string
+    {
+        return match ($type) {
+            'scale' => 'Skala penilaian',
+            'single_choice' => 'Pilih satu',
+            'multiple_choice' => 'Pilih beberapa',
+            'short_text' => 'Jawaban singkat',
+            'long_text' => 'Jawaban panjang',
+            'number' => 'Angka',
+            default => $type,
+        };
     }
 }

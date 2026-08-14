@@ -6,13 +6,21 @@ export type SurveyQuestion = {
   code: string
   text: string
   help_text?: string | null
-  response_type: 'scale' | 'single_choice' | 'multiple_choice' | 'short_text' | 'long_text' | 'number'
+  response_type:
+    'scale' | 'single_choice' | 'multiple_choice' | 'short_text' | 'long_text' | 'number'
   required: boolean
   validation?: { min?: number; max?: number } | null
   options: SurveyOption[]
   na_allowed: boolean
 }
-export type SurveySection = { id: string; code: string; title: string; description?: string | null; position: number; questions: SurveyQuestion[] }
+export type SurveySection = {
+  id: string
+  code: string
+  title: string
+  description?: string | null
+  position: number
+  questions: SurveyQuestion[]
+}
 export type RespondentSurvey = {
   id: string
   code: string
@@ -26,7 +34,11 @@ export type RespondentSurvey = {
   sections: SurveySection[]
 }
 export type EligibleSurvey = Omit<RespondentSurvey, 'sections'>
-export type SessionCredentials = { session_token: string; completion_token: string; expires_at: string }
+export type SessionCredentials = {
+  session_token: string
+  completion_token: string
+  expires_at: string
+}
 export type ResponseDraft = {
   id: string
   state: 'started' | 'partial' | 'submitted'
@@ -56,19 +68,29 @@ export async function listEligibleSurveys(): Promise<EligibleSurvey[]> {
 }
 
 export async function getEligibleSurvey(id: string): Promise<RespondentSurvey> {
-  return (await api.get<{ data: RespondentSurvey }>(`/api/v1/surveys/${id}/respondent-detail`)).data.data
+  return (await api.get<{ data: RespondentSurvey }>(`/api/v1/surveys/${id}/respondent-detail`)).data
+    .data
 }
 
 export async function startAuthenticatedSurvey(id: string): Promise<SessionCredentials> {
-  return (await api.post<{ data: SessionCredentials }>(`/api/v1/surveys/${id}/respondent-session`)).data.data
+  return (await api.post<{ data: SessionCredentials }>(`/api/v1/surveys/${id}/respondent-session`))
+    .data.data
 }
 
 export async function exchangeInvitation(invitationToken: string): Promise<SessionCredentials> {
-  return (await api.post<{ data: SessionCredentials }>('/api/v1/respondent-sessions', { invitation_token: invitationToken })).data.data
+  return (
+    await api.post<{ data: SessionCredentials }>('/api/v1/respondent-sessions', {
+      invitation_token: invitationToken,
+    })
+  ).data.data
 }
 
 export async function getRespondentSurvey(sessionToken: string): Promise<RespondentSurvey> {
-  return (await api.get<{ data: RespondentSurvey }>('/api/v1/respondent-survey', { headers: respondentHeaders(sessionToken) })).data.data
+  return (
+    await api.get<{ data: RespondentSurvey }>('/api/v1/respondent-survey', {
+      headers: respondentHeaders(sessionToken),
+    })
+  ).data.data
 }
 
 export async function createResponse(credentials: SessionCredentials): Promise<ResponseDraft> {
@@ -76,17 +98,62 @@ export async function createResponse(credentials: SessionCredentials): Promise<R
     await api.post<{ data: ResponseDraft }>(
       '/api/v1/responses',
       { consent: true, completion_token: credentials.completion_token },
-      { headers: { ...respondentHeaders(credentials.session_token), 'Idempotency-Key': newRequestKey() } },
+      {
+        headers: {
+          ...respondentHeaders(credentials.session_token),
+          'Idempotency-Key': newRequestKey(),
+        },
+      },
     )
   ).data.data
 }
 
+export async function startOrResumeAuthenticatedResponse(
+  id: string,
+): Promise<{ credentials: SessionCredentials; response: ResponseDraft }> {
+  const storageKey = `simutu:pending-credentials:${id}`
+  const stored = sessionStorage.getItem(storageKey)
+  let credentials: SessionCredentials | null = null
+
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored) as Partial<SessionCredentials>
+      if (
+        typeof parsed.session_token === 'string' &&
+        typeof parsed.completion_token === 'string' &&
+        typeof parsed.expires_at === 'string'
+      ) {
+        credentials = parsed as SessionCredentials
+      }
+    } catch {
+      // Invalid browser state is replaced with a fresh session below.
+    }
+  }
+
+  if (!credentials) {
+    sessionStorage.removeItem(storageKey)
+    credentials = await startAuthenticatedSurvey(id)
+    sessionStorage.setItem(storageKey, JSON.stringify(credentials))
+  }
+
+  const response = await createResponse(credentials)
+  sessionStorage.removeItem(storageKey)
+
+  return { credentials, response }
+}
+
 export async function declineParticipation(credentials: SessionCredentials): Promise<void> {
-  await api.post('/api/v1/respondent-sessions/decline', { completion_token: credentials.completion_token })
+  await api.post('/api/v1/respondent-sessions/decline', {
+    completion_token: credentials.completion_token,
+  })
 }
 
 export async function getResponse(id: string, sessionToken: string): Promise<ResponseDraft> {
-  return (await api.get<{ data: ResponseDraft }>(`/api/v1/responses/${id}`, { headers: respondentHeaders(sessionToken) })).data.data
+  return (
+    await api.get<{ data: ResponseDraft }>(`/api/v1/responses/${id}`, {
+      headers: respondentHeaders(sessionToken),
+    })
+  ).data.data
 }
 
 export async function saveResponse(
@@ -99,7 +166,13 @@ export async function saveResponse(
     await api.patch<{ data: ResponseDraft }>(
       `/api/v1/responses/${id}`,
       { answers: Object.entries(answers).map(([question_id, value]) => ({ question_id, value })) },
-      { headers: { ...respondentHeaders(sessionToken), 'If-Match': `"${version}"`, 'Idempotency-Key': newRequestKey() } },
+      {
+        headers: {
+          ...respondentHeaders(sessionToken),
+          'If-Match': `"${version}"`,
+          'Idempotency-Key': newRequestKey(),
+        },
+      },
     )
   ).data.data
 }
@@ -114,7 +187,13 @@ export async function submitResponse(
     await api.post<{ data: CompletionReceipt }>(
       `/api/v1/responses/${id}/submissions`,
       { completion_token: credentials.completion_token },
-      { headers: { ...respondentHeaders(credentials.session_token), 'If-Match': `"${version}"`, 'Idempotency-Key': idempotencyKey } },
+      {
+        headers: {
+          ...respondentHeaders(credentials.session_token),
+          'If-Match': `"${version}"`,
+          'Idempotency-Key': idempotencyKey,
+        },
+      },
     )
   ).data.data
 }

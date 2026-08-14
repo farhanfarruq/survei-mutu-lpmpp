@@ -7,12 +7,15 @@ use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrganizationalUnitController;
+use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\ResponseCollectionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('/health/live', [HealthController::class, 'live'])->name('api.health.live');
     Route::get('/health/ready', [HealthController::class, 'ready'])->name('api.health.ready');
+    Route::get('/auth/registration-options', [RegistrationController::class, 'options'])->middleware('throttle:30,1');
+    Route::post('/auth/register', [RegistrationController::class, 'store'])->middleware('throttle:5,1');
 
     Route::middleware('throttle:30,1')->group(function (): void {
         Route::post('/respondent-sessions', [ResponseCollectionController::class, 'exchange']);

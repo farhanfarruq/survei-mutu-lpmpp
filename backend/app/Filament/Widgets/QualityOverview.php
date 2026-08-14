@@ -17,7 +17,7 @@ class QualityOverview extends StatsOverviewWidget
 
     protected ?string $heading = 'Ringkasan periode berjalan';
 
-    protected ?string $description = 'Seluruh angka merupakan data agregat dalam scope organisasi Anda.';
+    protected ?string $description = 'Ringkasan data survei dari unit yang dapat Anda lihat.';
 
     protected function getStats(): array
     {

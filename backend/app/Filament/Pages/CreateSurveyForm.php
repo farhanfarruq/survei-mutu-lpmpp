@@ -104,6 +104,7 @@ class CreateSurveyForm extends Page
                         Select::make('response_type')
                             ->label('Jenis jawaban')
                             ->options([
+                                'scale' => 'Skala kepuasan 1–5',
                                 'short_text' => 'Jawaban singkat',
                                 'long_text' => 'Jawaban panjang',
                                 'single_choice' => 'Pilih satu jawaban',
@@ -221,6 +222,27 @@ class CreateSurveyForm extends Page
                 'weight' => 1,
             ]);
 
+            $scale = $version->scales()->create([
+                'code' => 'KEPUASAN-1-5',
+                'name' => 'Skala kepuasan 1–5',
+                'scale_type' => 'likert',
+                'min_value' => 1,
+                'max_value' => 5,
+                'na_allowed' => false,
+                'missing_policy' => 'exclude_item',
+            ]);
+
+            foreach ([1 => 'Sangat tidak puas', 'Tidak puas', 'Cukup', 'Puas', 'Sangat puas'] as $value => $label) {
+                $scale->points()->create([
+                    'code' => (string) $value,
+                    'numeric_value' => $value,
+                    'label' => $label,
+                    'position' => $value,
+                    'is_na' => false,
+                    'is_neutral' => $value === 3,
+                ]);
+            }
+
             $section = $version->sections()->create([
                 'code' => 'BAGIAN-1',
                 'title' => 'Pertanyaan',
@@ -231,6 +253,7 @@ class CreateSurveyForm extends Page
             foreach ($data['questions'] as $index => $question) {
                 $createdQuestion = $section->questions()->create([
                     'indicator_id' => $indicator->id,
+                    'scale_id' => $question['response_type'] === 'scale' ? $scale->id : null,
                     'code' => 'P'.($index + 1),
                     'item_text' => $question['item_text'],
                     'response_type' => $question['response_type'],
@@ -260,6 +283,6 @@ class CreateSurveyForm extends Page
             ->success()
             ->send();
 
-        $this->redirect(InstrumentVersionResource::getUrl('edit', ['record' => $version]));
+        $this->redirect(InstrumentVersionResource::getUrl('view', ['record' => $version]));
     }
 }

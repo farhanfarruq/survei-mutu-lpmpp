@@ -70,6 +70,10 @@ class ResponseCollectionTest extends TestCase
             ->assertJsonMissingPath('data.0.answers')
             ->assertJsonMissingPath('data.0.receipt_code');
 
+        $this->actingAs($respondent)->getJson('/api/v1/surveys/eligible')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
         $this->withHeaders($this->responseHeaders($sessionToken, 'submit-other', 3))
             ->postJson("/api/v1/responses/{$responseId}/submissions", ['completion_token' => $completionToken])
             ->assertConflict()
@@ -195,6 +199,21 @@ class ResponseCollectionTest extends TestCase
             ->postJson("/api/v1/surveys/{$survey->id}/respondent-session")
             ->assertConflict()
             ->assertJsonPath('code', 'response_already_started');
+    }
+
+    public function test_response_preflight_allows_required_respondent_headers(): void
+    {
+        $response = $this->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Access-Control-Request-Method' => 'POST',
+            'Access-Control-Request-Headers' => 'content-type,x-requested-with,x-xsrf-token,x-respondent-token,idempotency-key,if-match',
+        ])->options('/api/v1/responses')->assertNoContent();
+
+        $allowed = strtolower((string) $response->headers->get('Access-Control-Allow-Headers'));
+
+        foreach (['x-respondent-token', 'idempotency-key', 'if-match'] as $header) {
+            $this->assertStringContainsString($header, $allowed);
+        }
     }
 
     public function test_leader_cannot_enter_or_start_the_respondent_flow(): void

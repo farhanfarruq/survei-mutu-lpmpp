@@ -13,7 +13,8 @@ class UserResource extends JsonResource
         return [
             'id' => $this->public_id,
             'name' => $this->name,
-            'email' => $this->email,
+            'identity_number' => $this->resource->getAttributes()['identity_number'] ?? null,
+            'account_type' => $this->resource->getAttributes()['account_type'] ?? null,
             'is_active' => $this->is_active,
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->pluck('name')->values()),
             'permissions' => $this->when(

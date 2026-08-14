@@ -16,7 +16,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'is_active'])]
+#[Fillable(['name', 'identity_number', 'account_type', 'email', 'password', 'is_active'])]
 #[Hidden(['id', 'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -25,6 +25,12 @@ class User extends Authenticatable implements FilamentUser
 
     protected static function booted(): void
     {
+        static::saving(function (self $user): void {
+            $user->identity_number = filled($user->identity_number)
+                ? Str::upper(trim((string) $user->identity_number))
+                : null;
+        });
+
         static::creating(function (self $user): void {
             $user->public_id ??= (string) Str::uuid7();
         });
@@ -45,7 +51,7 @@ class User extends Authenticatable implements FilamentUser
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'is_active'])
+            ->logOnly(['name', 'identity_number', 'account_type', 'email', 'is_active'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

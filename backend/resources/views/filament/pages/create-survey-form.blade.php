@@ -17,6 +17,7 @@
             },
             typeLabel(type) {
                 return {
+                    scale: 'Skala kepuasan 1–5',
                     short_text: 'Jawaban singkat',
                     long_text: 'Jawaban panjang',
                     single_choice: 'Pilih satu',
@@ -128,6 +129,13 @@
                                             </template>
                                             <template x-if="question.response_type === 'number'">
                                                 <div class="survey-builder__line-input">Masukkan angka</div>
+                                            </template>
+                                            <template x-if="question.response_type === 'scale'">
+                                                <div class="survey-builder__choices">
+                                                    <template x-for="label in ['1 — Sangat tidak puas', '2 — Tidak puas', '3 — Cukup', '4 — Puas', '5 — Sangat puas']" :key="label">
+                                                        <div><span class="is-radio" aria-hidden="true"></span><span x-text="label"></span></div>
+                                                    </template>
+                                                </div>
                                             </template>
                                             <template x-if="['single_choice', 'multiple_choice'].includes(question.response_type)">
                                                 <div class="survey-builder__choices">

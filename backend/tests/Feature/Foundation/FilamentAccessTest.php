@@ -117,6 +117,68 @@ class FilamentAccessTest extends TestCase
         $this->actingAs($admin)->get('/admin')->assertOk()->assertDontSee('Buka Dashboard Pimpinan');
     }
 
+    public function test_admin_lpmpp_only_sees_the_simple_survey_navigation(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin_lpmpp');
+
+        $this->actingAs($admin)
+            ->get('/admin')
+            ->assertOk()
+            ->assertSee('Dashboard Mutu')
+            ->assertSee('Buat Formulir')
+            ->assertSee('Formulir Saya')
+            ->assertSee('Kelola Survei')
+            ->assertDontSee('Unit Organisasi')
+            ->assertDontSee('Pengguna')
+            ->assertDontSee('Bank Pertanyaan')
+            ->assertDontSee('Kelompok Responden')
+            ->assertDontSee('Periode Survei')
+            ->assertDontSee('Template Survei');
+
+        $this->actingAs($admin)
+            ->get('/admin/surveys/create')
+            ->assertOk()
+            ->assertSee('Formulir yang digunakan')
+            ->assertSee('Nama survei')
+            ->assertSee('Siapa yang akan mengisi?')
+            ->assertSee('Waktu Indonesia Barat (WIB)')
+            ->assertSee('Pilih unit/program studi')
+            ->assertDontSee('Kode survei')
+            ->assertDontSee('Minimum reporting')
+            ->assertDontSee('Privacy notice');
+    }
+
+    public function test_super_admin_keeps_system_settings_but_uses_the_simple_survey_navigation(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin)
+            ->get('/admin')
+            ->assertOk()
+            ->assertSee('Dashboard Mutu')
+            ->assertSee('Buat Formulir')
+            ->assertSee('Formulir Saya')
+            ->assertSee('Kelola Survei')
+            ->assertSee('Unit Organisasi')
+            ->assertSee('Pengguna')
+            ->assertSee('Peran')
+            ->assertDontSee('Permission')
+            ->assertDontSee('Bank Pertanyaan')
+            ->assertDontSee('Kelompok Responden')
+            ->assertDontSee('Periode Survei')
+            ->assertDontSee('Template Survei');
+
+        $this->actingAs($admin)
+            ->get('/admin/buat-formulir')
+            ->assertOk()
+            ->assertSee('Bangun formulir')
+            ->assertSee('Skala kepuasan 1–5');
+    }
+
     public function test_role_permissions_are_grouped_and_labeled_in_plain_indonesian(): void
     {
         $this->seed(RolePermissionSeeder::class);

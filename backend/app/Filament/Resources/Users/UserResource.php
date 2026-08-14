@@ -19,6 +19,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class UserResource extends Resource
 {
@@ -36,7 +37,17 @@ class UserResource extends Resource
     {
         return $schema->components([
             TextInput::make('name')->label('Nama')->required()->maxLength(160),
-            TextInput::make('email')->label('Email')->email()->required()->unique(ignoreRecord: true)->maxLength(255),
+            Select::make('account_type')->label('Jenis akun')->options([
+                'student' => 'Mahasiswa',
+                'lecturer' => 'Dosen',
+                'staff' => 'Tenaga kependidikan',
+            ]),
+            TextInput::make('identity_number')
+                ->label('NIM / nomor dosen / ID akun')
+                ->unique(ignoreRecord: true)
+                ->maxLength(50)
+                ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? Str::upper(trim($state)) : null),
+            TextInput::make('email')->label('Email internal')->helperText('Tetap digunakan untuk akun pengelola lama dan pemulihan akun.')->email()->required()->unique(ignoreRecord: true)->maxLength(255),
             TextInput::make('password')
                 ->label('Kata sandi')
                 ->password()
@@ -78,7 +89,14 @@ class UserResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')->label('Nama')->searchable()->sortable(),
-                TextColumn::make('email')->label('Email')->searchable(),
+                TextColumn::make('identity_number')->label('Nomor identitas')->searchable()->placeholder('Akun lama'),
+                TextColumn::make('account_type')->label('Jenis')->formatStateUsing(fn (?string $state): string => match ($state) {
+                    'student' => 'Mahasiswa',
+                    'lecturer' => 'Dosen',
+                    'staff' => 'Tenaga kependidikan',
+                    default => 'Pengelola',
+                }),
+                TextColumn::make('email')->label('Email')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('roles.name')->label('Peran')->badge(),
                 TextColumn::make('organizationalUnits.code')->label('Unit')->badge(),
                 IconColumn::make('is_active')->label('Aktif')->boolean(),

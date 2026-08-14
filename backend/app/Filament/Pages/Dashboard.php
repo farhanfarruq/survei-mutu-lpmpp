@@ -10,5 +10,5 @@ class Dashboard extends BaseDashboard
 
     protected static ?string $navigationLabel = 'Dashboard Mutu';
 
-    protected ?string $subheading = 'Pantau partisipasi, capaian mutu, tren, dan tindak lanjut dalam scope organisasi Anda.';
+    protected ?string $subheading = 'Pantau jumlah jawaban, tingkat partisipasi, dan hasil mutu dari survei Anda.';
 }

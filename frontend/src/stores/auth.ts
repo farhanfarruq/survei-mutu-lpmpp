@@ -14,11 +14,21 @@ export type OrganizationalMembership = {
 export type AuthUser = {
   id: string
   name: string
-  email: string
+  identity_number: string | null
+  account_type: 'student' | 'lecturer' | null
   is_active: boolean
   roles: string[]
   permissions: string[]
   organizational_units: OrganizationalMembership[]
+}
+
+export type RegistrationPayload = {
+  name: string
+  account_type: 'student' | 'lecturer'
+  identity_number: string
+  organizational_unit_id: string
+  password: string
+  password_confirmation: string
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -49,13 +59,34 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(email: string, password: string, remember: boolean): Promise<void> {
+  async function login(identityNumber: string, password: string, remember: boolean): Promise<void> {
     loading.value = true
     error.value = null
     try {
       if (await fetchUser()) return
       await initializeCsrf()
-      await api.post('/api/v1/auth/login', { email, password, remember })
+      await api.post('/api/v1/auth/login', { identity_number: identityNumber, password, remember })
+      await fetchUser()
+    } catch (caught) {
+      error.value = normalizeApiError(caught)
+      throw caught
+    } finally {
+      loading.value = false
+      initialized.value = true
+    }
+  }
+
+  async function register(payload: RegistrationPayload): Promise<void> {
+    loading.value = true
+    error.value = null
+    try {
+      await initializeCsrf()
+      await api.post('/api/v1/auth/register', payload)
+      await api.post('/api/v1/auth/login', {
+        identity_number: payload.identity_number,
+        password: payload.password,
+        remember: false,
+      })
       await fetchUser()
     } catch (caught) {
       error.value = normalizeApiError(caught)
@@ -80,5 +111,16 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.permissions.includes(permission) ?? false
   }
 
-  return { user, initialized, loading, error, authenticated, initialize, login, logout, can }
+  return {
+    user,
+    initialized,
+    loading,
+    error,
+    authenticated,
+    initialize,
+    login,
+    register,
+    logout,
+    can,
+  }
 })

@@ -4,9 +4,11 @@ namespace Tests\Feature\SurveyManagement;
 
 use App\Filament\Pages\CreateSurveyForm;
 use App\Filament\Resources\InstrumentVersions\Pages\ViewInstrumentVersion;
+use App\Filament\Resources\InstrumentVersions\RelationManagers\SectionsRelationManager;
 use App\Models\InstrumentVersion;
 use App\Models\OrganizationalUnit;
 use App\Models\User;
+use App\Services\InstrumentLifecycle;
 use Database\Seeders\RolePermissionSeeder;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,24 +56,61 @@ class CreateSurveyFormTest extends TestCase
                         'response_type' => 'long_text',
                         'is_required' => false,
                     ],
+                    [
+                        'item_text' => 'Seberapa puas Anda?',
+                        'response_type' => 'scale',
+                        'is_required' => true,
+                    ],
                 ],
             ])
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $version = InstrumentVersion::query()->with('sections.questions.options')->sole();
+        $version = InstrumentVersion::query()->with(['sections.questions.options', 'scales.points'])->sole();
 
         $this->assertSame('draft', $version->status->value);
         $this->assertSame('Survei Layanan Akademik', $version->template->name);
-        $this->assertCount(2, $version->sections->first()->questions);
+        $this->assertCount(3, $version->sections->first()->questions);
         $this->assertSame(
             ['Baik', 'Perlu diperbaiki'],
             $version->sections->first()->questions->first()->options->pluck('label')->all(),
         );
+        $this->assertSame(
+            ['Sangat tidak puas', 'Tidak puas', 'Cukup', 'Puas', 'Sangat puas'],
+            $version->scales->sole()->points->pluck('label')->all(),
+        );
+        $this->assertSame($version->scales->sole()->id, $version->sections->first()->questions->last()->scale_id);
         $this->get("/admin/instrument-versions/{$version->id}")->assertOk();
         Livewire::test(ViewInstrumentVersion::class, ['record' => $version->id])
-            ->set('activeRelationManager', '1')
+            ->assertSee('Isi formulir')
+            ->assertDontSee('Buat Scale')
             ->assertHasNoErrors();
+
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole('super_admin');
+        $this->actingAs($superAdmin);
+
+        Livewire::test(SectionsRelationManager::class, [
+            'ownerRecord' => $version,
+            'pageClass' => ViewInstrumentVersion::class,
+        ])
+            ->callTableAction('create', data: [
+                'title' => 'Pengalaman Pengguna',
+                'description' => 'Jawab sesuai pengalaman Anda.',
+                'questions' => [[
+                    'item_text' => 'Apakah layanan mudah digunakan?',
+                    'response_type' => 'short_text',
+                    'is_required' => true,
+                ]],
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $addedSection = $version->sections()->where('title', 'Pengalaman Pengguna')->with('questions')->sole();
+        $this->assertStringStartsWith('BAGIAN-', $addedSection->code);
+        $this->assertSame('internal', $addedSection->questions->sole()->method);
+
+        app(InstrumentLifecycle::class)->submitForReview($version, $admin);
+        $this->assertSame('in_review', $version->fresh()->status->value);
     }
 
     public function test_form_page_rejects_users_without_create_permissions(): void

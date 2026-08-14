@@ -34,6 +34,9 @@ class ResponseCollection
             ->whereHas('targets', fn ($query) => $query
                 ->whereIn('target_unit_id', $unitIds)
                 ->orWhereHas('respondentGroup', fn ($query) => $query->whereIn('organizational_unit_id', $unitIds)))
+            ->whereDoesntHave('participations', fn ($query) => $query
+                ->where('user_id', $user->id)
+                ->whereNotNull('completed_at'))
             ->with([
                 'instrumentVersion.sections.questions.options',
                 'instrumentVersion.sections.questions.scale.points',

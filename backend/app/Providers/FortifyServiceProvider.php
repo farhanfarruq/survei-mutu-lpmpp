@@ -37,8 +37,12 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
         Fortify::authenticateUsing(function (Request $request) {
+            $identity = trim((string) $request->input('identity_number'));
             $user = User::query()
-                ->where('email', Str::lower((string) $request->input('email')))
+                ->where(function ($query) use ($identity): void {
+                    $query->where('identity_number', Str::upper($identity))
+                        ->orWhereRaw('LOWER(email) = ?', [Str::lower($identity)]);
+                })
                 ->where('is_active', true)
                 ->first();
 

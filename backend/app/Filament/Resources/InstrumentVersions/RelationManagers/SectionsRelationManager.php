@@ -3,66 +3,84 @@
 namespace App\Filament\Resources\InstrumentVersions\RelationManagers;
 
 use App\Models\Indicator;
-use App\Models\QuestionBankEntry;
 use App\Models\Scale;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class SectionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'sections';
 
-    protected static ?string $title = 'Bagian, Pertanyaan, dan Pilihan';
+    protected static ?string $title = 'Isi Formulir';
+
+    public function isReadOnly(): bool
+    {
+        return ! (auth()->user()?->hasRole('super_admin') ?? false) || ! $this->getOwnerRecord()->isEditable();
+    }
 
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('code')->required()->maxLength(80),
-            TextInput::make('title')->label('Judul')->required()->maxLength(240),
-            TextInput::make('position')->label('Urutan')->numeric()->minValue(1)->required(),
-            Textarea::make('description')->label('Petunjuk')->columnSpanFull(),
+            Hidden::make('code')->default(fn (): string => 'BAGIAN-'.Str::upper(Str::random(8))),
+            Hidden::make('position')->default(fn (): int => ((int) $this->getOwnerRecord()->sections()->max('position')) + 1),
+            TextInput::make('title')->label('Nama bagian')->placeholder('Contoh: Pelayanan Akademik')->required()->maxLength(240),
+            Textarea::make('description')->label('Petunjuk pengisian')->placeholder('Opsional')->columnSpanFull(),
             Repeater::make('questions')->label('Pertanyaan')->relationship()->schema([
-                Select::make('question_bank_entry_id')->label('Sumber bank pertanyaan')->options(QuestionBankEntry::query()->where('is_active', true)->orderBy('code')->pluck('item_text', 'id'))->searchable(),
-                TextInput::make('code')->required()->maxLength(80),
-                Textarea::make('item_text')->label('Item')->required()->rows(2)->columnSpanFull(),
-                Select::make('indicator_id')->label('Indikator')->options(fn () => Indicator::query()->whereHas('category', fn (Builder $query) => $query->where('instrument_version_id', $this->getOwnerRecord()->id))->orderBy('code')->pluck('name', 'id'))->required()->searchable(),
-                Select::make('scale_id')->label('Skala')->options(fn () => Scale::query()->where('instrument_version_id', $this->getOwnerRecord()->id)->orderBy('code')->pluck('name', 'id'))->searchable(),
-                Select::make('response_type')->label('Jenis jawaban')->options(['scale' => 'Skala', 'single_choice' => 'Pilihan tunggal', 'multiple_choice' => 'Pilihan jamak', 'short_text' => 'Teks singkat', 'long_text' => 'Teks panjang', 'number' => 'Angka'])->required(),
-                Select::make('method')->label('Metode')->options(['SERVPERF' => 'SERVPERF', 'SERVQUAL' => 'SERVQUAL', 'IPA' => 'IPA', 'CSI' => 'CSI', 'SKM' => 'SKM/IKM', 'NPS' => 'NPS', 'internal' => 'Internal'])->default('internal')->required(),
-                TextInput::make('pair_code')->label('Kode pasangan')->maxLength(80),
-                TextInput::make('position')->label('Urutan')->numeric()->minValue(1)->required(),
-                Toggle::make('is_required')->label('Wajib')->default(true),
-                Textarea::make('help_text')->label('Bantuan'),
-                Textarea::make('measurement_purpose')->label('Tujuan pengukuran')->required(),
+                Hidden::make('code')->default(fn (): string => 'P-'.Str::upper(Str::random(8))),
+                Hidden::make('indicator_id')->default(fn () => Indicator::query()->whereHas('category', fn ($query) => $query->where('instrument_version_id', $this->getOwnerRecord()->id))->value('id')),
+                Hidden::make('scale_id')->default(fn () => Scale::query()->where('instrument_version_id', $this->getOwnerRecord()->id)->value('id'))->dehydrated(fn (Get $get): bool => $get('response_type') === 'scale'),
+                Hidden::make('method')->default('internal'),
+                Hidden::make('measurement_purpose')->default('Mengumpulkan jawaban responden.'),
+                Textarea::make('item_text')->label('Tulis pertanyaan')->placeholder('Contoh: Seberapa puas Anda dengan layanan kami?')->required()->rows(2)->columnSpanFull(),
+                Select::make('response_type')->label('Jenis jawaban')->options(['scale' => 'Skala kepuasan 1–5', 'single_choice' => 'Pilih satu jawaban', 'multiple_choice' => 'Pilih beberapa jawaban', 'short_text' => 'Jawaban singkat', 'long_text' => 'Jawaban panjang', 'number' => 'Angka'])->default('short_text')->required()->live(),
+                Toggle::make('is_required')->label('Wajib diisi')->default(true),
+                Textarea::make('help_text')->label('Petunjuk tambahan')->placeholder('Opsional')->columnSpanFull(),
                 Repeater::make('options')->label('Pilihan jawaban')->relationship()->schema([
-                    TextInput::make('code')->required()->maxLength(80),
-                    TextInput::make('label')->required()->maxLength(300),
-                    TextInput::make('position')->label('Urutan')->numeric()->minValue(1)->required(),
-                    TextInput::make('score_value')->label('Skor')->numeric(),
-                    Toggle::make('is_exclusive')->label('Eksklusif'),
-                ])->columns(3)->columnSpanFull(),
-            ])->columns(2)->columnSpanFull(),
+                    Hidden::make('code')->default(fn (): string => 'O-'.Str::upper(Str::random(8))),
+                    TextInput::make('label')->label('Pilihan')->placeholder('Tulis pilihan jawaban')->required()->maxLength(300),
+                ])->defaultItems(2)->orderColumn('position')->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                    $data['code'] ??= 'O-'.Str::upper(Str::random(8));
+
+                    return $data;
+                })->addActionLabel('Tambah pilihan')->visible(fn (Get $get): bool => in_array($get('response_type'), ['single_choice', 'multiple_choice'], true))->columnSpanFull(),
+            ])->defaultItems(1)->orderColumn('position')->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                $data['code'] ??= 'P-'.Str::upper(Str::random(8));
+                $data['indicator_id'] ??= Indicator::query()->whereIn('category_id', $this->getOwnerRecord()->categories()->pluck('id'))->value('id');
+                $data['scale_id'] = $data['response_type'] === 'scale'
+                    ? Scale::query()->where('instrument_version_id', $this->getOwnerRecord()->id)->value('id')
+                    : null;
+                $data['method'] ??= 'internal';
+                $data['measurement_purpose'] ??= 'Mengumpulkan jawaban responden.';
+
+                return $data;
+            })->addActionLabel('Tambah pertanyaan')->columns(2)->columnSpanFull(),
         ]);
     }
 
     public function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('position')->label('#')->sortable(), TextColumn::make('code'), TextColumn::make('title')->label('Judul'),
+            TextColumn::make('position')->label('Urutan')->sortable(),
+            TextColumn::make('title')->label('Bagian formulir'),
             TextColumn::make('questions_count')->counts('questions')->label('Pertanyaan'),
-        ])->headerActions([CreateAction::make()->visible(fn () => $this->getOwnerRecord()->isEditable())])
-            ->recordActions([EditAction::make()->visible(fn () => $this->getOwnerRecord()->isEditable()), DeleteAction::make()->visible(fn () => $this->getOwnerRecord()->isEditable())])
+        ])->headerActions([CreateAction::make()->label('Tambah bagian')->visible(fn (): bool => (auth()->user()?->hasRole('super_admin') ?? false) && $this->getOwnerRecord()->isEditable())])
+            ->recordActions([
+                EditAction::make()->label('Ubah')->visible(fn (): bool => (auth()->user()?->hasRole('super_admin') ?? false) && $this->getOwnerRecord()->isEditable()),
+                DeleteAction::make()->label('Hapus')->visible(fn (): bool => (auth()->user()?->hasRole('super_admin') ?? false) && $this->getOwnerRecord()->isEditable()),
+            ])
             ->defaultSort('position');
     }
 }

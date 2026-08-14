@@ -17,10 +17,10 @@ class FoundationUserSeeder extends Seeder
         }
 
         $profiles = [
-            ['name' => 'Super Admin ITDA', 'email' => 'superadmin@example.test', 'role' => 'super_admin'],
-            ['name' => 'Admin LPMPP ITDA', 'email' => 'admin.lpmpp@example.test', 'role' => 'admin_lpmpp'],
-            ['name' => 'Pimpinan ITDA', 'email' => 'pimpinan@example.test', 'role' => 'leader'],
-            ['name' => 'Responden ITDA', 'email' => 'responden@example.test', 'role' => 'respondent'],
+            ['name' => 'Super Admin ITDA', 'email' => 'superadmin@example.test', 'identity_number' => 'ADMIN-001', 'account_type' => 'staff', 'role' => 'super_admin'],
+            ['name' => 'Admin LPMPP ITDA', 'email' => 'admin.lpmpp@example.test', 'identity_number' => 'LPMPP-001', 'account_type' => 'staff', 'role' => 'admin_lpmpp'],
+            ['name' => 'Pimpinan ITDA', 'email' => 'pimpinan@example.test', 'identity_number' => 'PIMPINAN-001', 'account_type' => 'lecturer', 'role' => 'leader'],
+            ['name' => 'Responden ITDA', 'email' => 'responden@example.test', 'identity_number' => 'MHS-001', 'account_type' => 'student', 'role' => 'respondent'],
         ];
 
         foreach ($profiles as $profile) {
@@ -32,6 +32,8 @@ class FoundationUserSeeder extends Seeder
                 ['email' => $profile['email']],
                 [
                     'name' => $profile['name'],
+                    'identity_number' => $profile['identity_number'],
+                    'account_type' => $profile['account_type'],
                     'password' => Hash::make('password'),
                     'is_active' => true,
                 ],
