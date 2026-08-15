@@ -175,7 +175,7 @@ test('Phase 13 production workspaces are permission-aware and reflow on mobile',
 
   await page.setViewportSize({ width: 320, height: 800 })
   for (const [path, heading] of [
-    ['/app/ai', 'AI Analysis'],
+    ['/app/ai', 'Analisis AI'],
     ['/app/notifications', 'Notifikasi'],
     ['/app/follow-up', 'Tindak Lanjut'],
   ] as const) {

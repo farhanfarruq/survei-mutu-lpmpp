@@ -44,10 +44,15 @@ class AnalyticsReportingTest extends TestCase
 
         $dashboard = $this->actingAs($leader)->getJson('/api/v1/leadership/results?drilldown=item')
             ->assertOk()->assertJsonPath('data.summary.overall.normalized_score', 75)
+            ->assertJsonPath('data.summary.survey_id', $survey->id)
             ->assertJsonPath('data.comparison.allowed', false)
-            ->assertJsonPath('data.comparison.series.0.group', 'Mahasiswa aktif');
+            ->assertJsonPath('data.comparison.series.0.group', 'Mahasiswa aktif')
+            ->assertJsonPath('data.drilldown.0.category_name', 'Layanan')
+            ->assertJsonPath('data.drilldown.0.response_type', 'scale')
+            ->assertJsonPath('data.drilldown.0.distribution.0.label', 'Pilihan 4');
         $this->assertStringNotContainsString('response_answers', $dashboard->getContent());
         $this->assertStringNotContainsString('respondent_session', $dashboard->getContent());
+        $this->assertStringNotContainsString('receipt_code', $dashboard->getContent());
     }
 
     public function test_scope_and_small_sample_are_enforced(): void

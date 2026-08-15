@@ -99,7 +99,7 @@ class FilamentAccessTest extends TestCase
             'follow-up.dashboard.read',
         ], $leader->getAllPermissions()->pluck('name')->all());
 
-        $this->actingAs($leader)->get('/admin')->assertOk()->assertSee('Buka Dashboard Pimpinan');
+        $this->actingAs($leader)->get('/admin')->assertOk()->assertSee('Buka Dashboard Hasil Survei');
         $this->actingAs($leader)->get('/admin/surveys')->assertOk();
         $this->actingAs($leader)->get('/admin/users')->assertOk();
         $this->actingAs($leader)->get('/admin/surveys/create')->assertForbidden();
@@ -108,13 +108,13 @@ class FilamentAccessTest extends TestCase
         $this->actingAs($leader)->get('/admin/roles')->assertForbidden();
     }
 
-    public function test_admin_does_not_see_the_leader_vue_shortcut(): void
+    public function test_admin_sees_the_survey_dashboard_shortcut(): void
     {
         $this->seed(RolePermissionSeeder::class);
         $admin = User::factory()->create();
         $admin->assignRole('admin_lpmpp');
 
-        $this->actingAs($admin)->get('/admin')->assertOk()->assertDontSee('Buka Dashboard Pimpinan');
+        $this->actingAs($admin)->get('/admin')->assertOk()->assertSee('Buka Dashboard Hasil Survei');
     }
 
     public function test_admin_lpmpp_only_sees_the_simple_survey_navigation(): void
@@ -127,6 +127,7 @@ class FilamentAccessTest extends TestCase
             ->get('/admin')
             ->assertOk()
             ->assertSee('Dashboard Mutu')
+            ->assertSee('Buka Dashboard Hasil Survei')
             ->assertSee('Buat Formulir')
             ->assertSee('Formulir Saya')
             ->assertSee('Kelola Survei')
@@ -160,6 +161,7 @@ class FilamentAccessTest extends TestCase
             ->get('/admin')
             ->assertOk()
             ->assertSee('Dashboard Mutu')
+            ->assertSee('Buka Dashboard Hasil Survei')
             ->assertSee('Buat Formulir')
             ->assertSee('Formulir Saya')
             ->assertSee('Kelola Survei')

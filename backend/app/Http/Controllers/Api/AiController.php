@@ -20,6 +20,61 @@ use Illuminate\Support\Facades\DB;
 
 class AiController extends Controller
 {
+    public function workspace(Request $request, OrganizationalScope $scope): JsonResponse
+    {
+        $unitIds = $scope->accessibleUnitIds($request->user());
+        $runs = DB::table('analysis_runs')
+            ->join('surveys', 'analysis_runs.survey_id', '=', 'surveys.id')
+            ->join('aggregate_snapshots', 'analysis_runs.id', '=', 'aggregate_snapshots.analysis_run_id')
+            ->leftJoin('organizational_units', 'surveys.owner_unit_id', '=', 'organizational_units.id')
+            ->leftJoin('survey_periods', 'surveys.survey_period_id', '=', 'survey_periods.id')
+            ->where('analysis_runs.state', 'completed')
+            ->where('aggregate_snapshots.state', 'released')
+            ->whereIn('surveys.owner_unit_id', $unitIds)
+            ->orderByDesc('analysis_runs.completed_at')
+            ->limit(50)
+            ->get([
+                'analysis_runs.id',
+                'surveys.name as survey',
+                'surveys.owner_unit_id as unit_id',
+                'organizational_units.name as unit',
+                'survey_periods.name as period',
+                'analysis_runs.completed_at',
+            ]);
+        $reviewers = User::query()
+            ->permission('ai.review')
+            ->where('is_active', true)
+            ->whereKeyNot($request->user()->id)
+            ->whereHas('organizationalUnits', fn ($query) => $query->whereIn('organizational_units.id', $unitIds))
+            ->with(['organizationalUnits' => fn ($query) => $query->select('organizational_units.id')])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (User $user): array => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'unit_ids' => $user->organizationalUnits->pluck('id')->values(),
+            ]);
+        $jobs = DB::table('ai_jobs')
+            ->join('analysis_runs', 'ai_jobs.analysis_run_id', '=', 'analysis_runs.id')
+            ->join('surveys', 'analysis_runs.survey_id', '=', 'surveys.id')
+            ->join('aggregate_snapshots', 'ai_jobs.aggregate_snapshot_id', '=', 'aggregate_snapshots.id')
+            ->leftJoin('organizational_units', 'aggregate_snapshots.owner_unit_id', '=', 'organizational_units.id')
+            ->leftJoin('ai_results', 'ai_jobs.id', '=', 'ai_results.ai_job_id')
+            ->whereIn('aggregate_snapshots.owner_unit_id', $unitIds)
+            ->orderByDesc('ai_jobs.created_at')
+            ->limit(50)
+            ->get([
+                'ai_jobs.id',
+                'surveys.name as survey',
+                'organizational_units.name as unit',
+                'ai_jobs.state',
+                'ai_results.review_status',
+                'ai_jobs.created_at',
+            ]);
+
+        return response()->json(['data' => compact('runs', 'reviewers', 'jobs')]);
+    }
+
     public function configs(): JsonResponse
     {
         return response()->json(['data' => AiProviderConfig::latest()->get()->map(fn ($config) => $this->configData($config))]);

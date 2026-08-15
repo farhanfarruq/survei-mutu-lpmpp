@@ -41,6 +41,11 @@ class Phase13Test extends TestCase
         $fake = new FakeAiProvider;
         $this->app->instance(AiProvider::class, $fake);
 
+        $workspace = $this->actingAs($analyst)->getJson('/api/v1/ai-workspace-options')->assertOk();
+        $this->assertContains($run->id, collect($workspace->json('data.runs'))->pluck('id'));
+        $this->assertContains($reviewer->id, collect($workspace->json('data.reviewers'))->pluck('id'));
+        $this->assertArrayNotHasKey('identity_number', $workspace->json('data.reviewers.0'));
+
         $config = $this->actingAs($admin)->postJson('/api/v1/ai-provider-configs', [
             'provider' => 'mock', 'model' => 'fake-v1', 'base_url' => 'https://mock.invalid', 'api_key' => 'test-secret-never-sent', 'enabled' => true,
             'max_input_tokens' => 8000, 'max_output_tokens' => 2000, 'max_cost_micros' => 10000, 'input_cost_micros_per_1k' => 10, 'output_cost_micros_per_1k' => 20, 'timeout_seconds' => 10, 'rate_limit_per_minute' => 10,
@@ -59,6 +64,10 @@ class Phase13Test extends TestCase
 
         $job = $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId, 'reviewer_id' => $reviewer->id])->assertAccepted();
         $jobId = $job->json('data.id');
+        $this->assertContains(
+            $jobId,
+            collect($this->actingAs($analyst)->getJson('/api/v1/ai-workspace-options')->json('data.jobs'))->pluck('id'),
+        );
         $resultId = $this->actingAs($analyst)->getJson("/api/v1/ai-jobs/{$jobId}")->assertOk()->assertJsonPath('data.state', 'completed')->json('data.result_id');
         $this->assertSame('[REDACTED_UNTRUSTED_TEXT]', $fake->lastPayload['indicators'][0]['name']);
         $this->assertArrayNotHasKey('answers', $fake->lastPayload);

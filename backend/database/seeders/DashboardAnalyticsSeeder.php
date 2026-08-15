@@ -40,7 +40,7 @@ class DashboardAnalyticsSeeder extends Seeder
             $metricsCategories = collect($categories)->map(function (array $category, int $index) use ($categoryScores, $responseCount): array {
                 $value = $categoryScores[$index];
 
-                return $category + ['n' => $responseCount, 'normalized_score' => $value, 'interpretation' => $this->interpretation($value), 'suppressed' => false];
+                return $category + ['n' => $responseCount, 'missing' => 0, 'mean' => round(1 + (4 * $value / 100), 2), 'normalized_score' => $value, 'interpretation' => $this->interpretation($value), 'suppressed' => false];
             })->all();
             $metrics = [
                 'methodology_version' => 'deterministic-v1',
@@ -48,7 +48,7 @@ class DashboardAnalyticsSeeder extends Seeder
                 'overall' => ['n' => $responseCount, 'normalized_score' => $score, 'interpretation' => $this->interpretation($score), 'suppressed' => false],
                 'categories' => $metricsCategories,
                 'indicators' => $metricsCategories,
-                'items' => collect($metricsCategories)->map(fn (array $category) => ['code' => $category['code'].'-01', 'text' => $category['name'], 'n' => $responseCount, 'normalized_score' => $category['normalized_score'], 'interpretation' => $category['interpretation'], 'suppressed' => false])->all(),
+                'items' => collect($metricsCategories)->map(fn (array $category) => $this->item($category, $responseCount))->all(),
                 'comparison_eligible' => true,
             ];
             $inputHash = hash('sha256', $surveyCode.'-dashboard-aggregate-v1');
@@ -66,7 +66,10 @@ class DashboardAnalyticsSeeder extends Seeder
                     'state' => 'released',
                     'metrics' => $metrics,
                     'filter_provenance' => ['survey_id' => $survey->id, 'response_state' => 'submitted', 'aggregate_only' => true],
-                    'limitations' => ['Hasil hanya tersedia dalam bentuk agregat; jawaban individual tidak ditampilkan.'],
+                    'limitations' => [
+                        'Data dashboard demonstrasi ini merupakan simulasi, bukan hasil resmi ITDA.',
+                        'Hasil hanya tersedia dalam bentuk agregat; jawaban individual tidak ditampilkan.',
+                    ],
                     'response_count' => $responseCount,
                     'eligible_count' => $eligible,
                     'reporting_threshold' => $survey->reporting_threshold,
@@ -83,5 +86,48 @@ class DashboardAnalyticsSeeder extends Seeder
     private function interpretation(float $score): string
     {
         return $score >= 80 ? 'Sangat Baik' : ($score >= 65 ? 'Baik' : 'Perlu Perbaikan');
+    }
+
+    private function item(array $category, int $responseCount): array
+    {
+        $distribution = $this->distribution((float) $category['normalized_score'], $responseCount);
+
+        return [
+            'code' => $category['code'].'-01',
+            'text' => $category['name'],
+            'n' => $responseCount,
+            'missing' => 0,
+            'mean' => round(collect($distribution)->sum(fn (array $row): int|float => $row['value'] * $row['count']) / $responseCount, 2),
+            'distribution' => $distribution,
+            'top_two_box' => round(collect($distribution)->whereIn('value', [4, 5])->sum('percentage'), 1),
+            'normalized_score' => $category['normalized_score'],
+            'interpretation' => $category['interpretation'],
+            'suppressed' => false,
+        ];
+    }
+
+    private function distribution(float $normalizedScore, int $responseCount): array
+    {
+        $targetMean = 1 + (4 * $normalizedScore / 100);
+        $adjustedMean = max(1.0, min(5.0, ($targetMean - 0.3) / 0.9));
+        $lower = (int) floor($adjustedMean);
+        $upper = (int) ceil($adjustedMean);
+        $weights = array_fill(1, 5, 0.02);
+        if ($lower === $upper) {
+            $weights[$lower] += 0.9;
+        } else {
+            $weights[$lower] += 0.9 * ($upper - $adjustedMean);
+            $weights[$upper] += 0.9 * ($adjustedMean - $lower);
+        }
+
+        $labels = [1 => 'Sangat tidak setuju', 2 => 'Tidak setuju', 3 => 'Netral', 4 => 'Setuju', 5 => 'Sangat setuju'];
+        $remaining = $responseCount;
+
+        return collect(range(1, 5))->map(function (int $value) use ($weights, $labels, $responseCount, &$remaining): array {
+            $count = $value === 5 ? $remaining : (int) round($responseCount * $weights[$value]);
+            $remaining -= $count;
+
+            return ['value' => $value, 'label' => $labels[$value], 'count' => $count, 'percentage' => round(100 * $count / $responseCount, 1)];
+        })->all();
     }
 }

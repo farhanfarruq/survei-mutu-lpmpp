@@ -4,8 +4,13 @@ namespace App\Filament\Pages;
 
 use App\Enums\InstrumentStatus;
 use App\Filament\Resources\InstrumentVersions\InstrumentVersionResource;
+use App\Models\Category;
+use App\Models\Indicator;
+use App\Models\InstrumentSection;
 use App\Models\InstrumentVersion;
 use App\Models\OrganizationalUnit;
+use App\Models\Question;
+use App\Models\Scale;
 use App\Models\SurveyTemplate;
 use App\Services\OrganizationalScope;
 use Filament\Forms\Components\Repeater;
@@ -16,6 +21,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
@@ -24,6 +30,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use UnitEnum;
 
+/** @property Schema $form */
 class CreateSurveyForm extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentPlus;
@@ -67,6 +74,20 @@ class CreateSurveyForm extends Page
     {
         return $schema
             ->components([
+                Select::make('audience_preset')
+                    ->label('Mulai dari contoh')
+                    ->options([
+                        'mahasiswa' => 'Survei mahasiswa',
+                        'dosen' => 'Survei dosen',
+                        'tenaga_kependidikan' => 'Survei tenaga kependidikan',
+                        'alumni' => 'Survei alumni',
+                        'stakeholder' => 'Survei stakeholder',
+                    ])
+                    ->placeholder('Formulir kosong')
+                    ->helperText('Memilih contoh akan mengisi pertanyaan awal yang masih bisa diubah.')
+                    ->live()
+                    ->afterStateUpdated(fn (?string $state, Set $set) => $set('questions', self::presetQuestions($state)))
+                    ->columnSpanFull(),
                 Select::make('owner_unit_id')
                     ->label('Unit pemilik')
                     ->options(fn () => OrganizationalUnit::query()
@@ -105,6 +126,7 @@ class CreateSurveyForm extends Page
                             ->label('Jenis jawaban')
                             ->options([
                                 'scale' => 'Skala kepuasan 1–5',
+                                'yes_no' => 'Ya / Tidak',
                                 'short_text' => 'Jawaban singkat',
                                 'long_text' => 'Jawaban panjang',
                                 'single_choice' => 'Pilih satu jawaban',
@@ -114,6 +136,18 @@ class CreateSurveyForm extends Page
                             ->default('short_text')
                             ->required()
                             ->live(),
+                        TextInput::make('category_name')
+                            ->label('Kategori')
+                            ->placeholder('Contoh: Pelayanan akademik')
+                            ->default('Umum')
+                            ->helperText('Kosongkan jika pertanyaan termasuk kategori Umum.')
+                            ->maxLength(160),
+                        TextInput::make('indicator_name')
+                            ->label('Indikator')
+                            ->placeholder('Contoh: Kecepatan pelayanan')
+                            ->default('Jawaban responden')
+                            ->helperText('Kosongkan jika belum memerlukan indikator khusus.')
+                            ->maxLength(160),
                         Toggle::make('is_required')
                             ->label('Wajib diisi')
                             ->live()
@@ -154,6 +188,46 @@ class CreateSurveyForm extends Page
             ->columns(2);
     }
 
+    /** @return array<int, array<string, mixed>> */
+    private static function presetQuestions(?string $preset): array
+    {
+        $subject = [
+            'mahasiswa' => 'layanan akademik bagi mahasiswa',
+            'dosen' => 'dukungan pelaksanaan pengajaran bagi dosen',
+            'tenaga_kependidikan' => 'dukungan kerja bagi tenaga kependidikan',
+            'alumni' => 'layanan alumni',
+            'stakeholder' => 'layanan kerja sama bagi stakeholder',
+        ][$preset] ?? null;
+
+        if ($subject === null) {
+            return [];
+        }
+
+        return [
+            [
+                'item_text' => "Seberapa puas Anda terhadap {$subject}?",
+                'response_type' => 'scale',
+                'category_name' => 'Kualitas layanan',
+                'indicator_name' => 'Kepuasan',
+                'is_required' => true,
+            ],
+            [
+                'item_text' => "Apakah informasi mengenai {$subject} mudah ditemukan?",
+                'response_type' => 'yes_no',
+                'category_name' => 'Informasi',
+                'indicator_name' => 'Kemudahan akses',
+                'is_required' => true,
+            ],
+            [
+                'item_text' => 'Apa saran utama Anda untuk perbaikan layanan?',
+                'response_type' => 'long_text',
+                'category_name' => 'Saran',
+                'indicator_name' => 'Masukan perbaikan',
+                'is_required' => false,
+            ],
+        ];
+    }
+
     public function create(): void
     {
         $data = $this->form->getState();
@@ -167,11 +241,18 @@ class CreateSurveyForm extends Page
         );
 
         foreach ($data['questions'] as $index => &$question) {
+            $question['category_name'] = trim((string) ($question['category_name'] ?? '')) ?: 'Umum';
+            $question['indicator_name'] = trim((string) ($question['indicator_name'] ?? '')) ?: 'Jawaban responden';
             $question['options'] = collect($question['options'] ?? [])
                 ->pluck('label')
                 ->filter(fn (?string $label): bool => filled($label))
                 ->values()
                 ->all();
+
+            if ($question['response_type'] === 'yes_no') {
+                $question['response_type'] = 'single_choice';
+                $question['options'] = ['Ya', 'Tidak'];
+            }
 
             if (in_array($question['response_type'], ['single_choice', 'multiple_choice'], true)
                 && count($question['options']) < 2) {
@@ -198,6 +279,7 @@ class CreateSurveyForm extends Page
                 'created_by' => $user->id,
             ]);
 
+            /** @var InstrumentVersion $version */
             $version = $template->versions()->create([
                 'major' => 1,
                 'minor' => 0,
@@ -208,20 +290,7 @@ class CreateSurveyForm extends Page
                 'created_by' => $user->id,
             ]);
 
-            $category = $version->categories()->create([
-                'code' => 'UMUM',
-                'name' => 'Umum',
-                'description' => 'Pertanyaan umum dari formulir sederhana.',
-                'position' => 1,
-            ]);
-
-            $indicator = $category->indicators()->create([
-                'code' => 'JAWABAN',
-                'name' => 'Jawaban responden',
-                'construct' => 'Umpan balik umum',
-                'weight' => 1,
-            ]);
-
+            /** @var Scale $scale */
             $scale = $version->scales()->create([
                 'code' => 'KEPUASAN-1-5',
                 'name' => 'Skala kepuasan 1–5',
@@ -243,6 +312,7 @@ class CreateSurveyForm extends Page
                 ]);
             }
 
+            /** @var InstrumentSection $section */
             $section = $version->sections()->create([
                 'code' => 'BAGIAN-1',
                 'title' => 'Pertanyaan',
@@ -250,7 +320,38 @@ class CreateSurveyForm extends Page
                 'position' => 1,
             ]);
 
+            /** @var array<string, Category> $categories */
+            $categories = [];
+            /** @var array<string, Indicator> $indicators */
+            $indicators = [];
+
             foreach ($data['questions'] as $index => $question) {
+                $categoryKey = Str::lower($question['category_name']);
+                if (! isset($categories[$categoryKey])) {
+                    /** @var Category $category */
+                    $category = $version->categories()->create([
+                        'code' => 'KAT-'.str_pad((string) (count($categories) + 1), 2, '0', STR_PAD_LEFT),
+                        'name' => $question['category_name'],
+                        'description' => 'Kategori dari formulir sederhana.',
+                        'position' => count($categories) + 1,
+                    ]);
+                    $categories[$categoryKey] = $category;
+                }
+                $category = $categories[$categoryKey];
+                $indicatorKey = $categoryKey.'|'.Str::lower($question['indicator_name']);
+                if (! isset($indicators[$indicatorKey])) {
+                    /** @var Indicator $indicator */
+                    $indicator = $category->indicators()->create([
+                        'code' => 'IND-'.str_pad((string) (count($indicators) + 1), 2, '0', STR_PAD_LEFT),
+                        'name' => $question['indicator_name'],
+                        'construct' => $question['category_name'],
+                        'weight' => 1,
+                    ]);
+                    $indicators[$indicatorKey] = $indicator;
+                }
+                $indicator = $indicators[$indicatorKey];
+
+                /** @var Question $createdQuestion */
                 $createdQuestion = $section->questions()->create([
                     'indicator_id' => $indicator->id,
                     'scale_id' => $question['response_type'] === 'scale' ? $scale->id : null,

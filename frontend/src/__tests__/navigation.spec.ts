@@ -36,7 +36,7 @@ describe('navigationFor', () => {
       user(['report.read', 'ai.read', 'finding.read', 'notification.read'], ['leader']),
     ).map(({ label }) => label)
     expect(labels).toEqual([
-      'Dashboard Eksekutif',
+      'Dashboard Hasil Survei',
       'Analisis AI',
       'Tindak Lanjut',
       'Notifikasi',
@@ -44,21 +44,39 @@ describe('navigationFor', () => {
     ])
     expect(labels).not.toContain('Survei Saya')
   })
+
+  it.each(['admin_lpmpp', 'super_admin'])('shows the survey dashboard for %s', (role) => {
+    expect(navigationFor(user(['report.read'], [role])).map(({ label }) => label)).toEqual([
+      'Dashboard Hasil Survei',
+      'Panel Administrasi',
+    ])
+  })
+
+  it.each(['admin_lpmpp', 'super_admin'])('shows AI and follow-up tools allowed for %s', (role) => {
+    expect(
+      navigationFor(
+        user(['report.read', 'ai.read', 'finding.read', 'notification.read'], [role]),
+      ).map(({ label }) => label),
+    ).toEqual([
+      'Dashboard Hasil Survei',
+      'Analisis AI',
+      'Tindak Lanjut',
+      'Notifikasi',
+      'Panel Administrasi',
+    ])
+  })
 })
 
 describe('destinationAfterLogin', () => {
-  it('always sends admins and super admins to Filament', () => {
-    expect(
-      destinationAfterLogin(user(['admin.panel.access'], ['admin_lpmpp']), '/app/notifications'),
-    ).toEqual({
-      external: true,
-      to: 'http://localhost:8000/admin',
-    })
-    expect(destinationAfterLogin(user(['admin.panel.access'], ['super_admin']))).toEqual({
-      external: true,
-      to: 'http://localhost:8000/admin',
-    })
-  })
+  it.each(['admin_lpmpp', 'super_admin', 'leader'])(
+    'opens the survey dashboard by default for %s',
+    (role) => {
+      expect(destinationAfterLogin(user(['report.read'], [role]))).toEqual({
+        external: false,
+        to: '/app/analytics',
+      })
+    },
+  )
 
   it('keeps respondents in Vue and opens the leader dashboard by default', () => {
     expect(destinationAfterLogin(user([]))).toEqual({ external: false, to: '/app' })
@@ -72,10 +90,10 @@ describe('destinationAfterLogin', () => {
     })
   })
 
-  it('allows Vue only for respondent and leader roles', () => {
+  it('allows Vue for every application role', () => {
     expect(canAccessVue(user([], ['respondent']))).toBe(true)
     expect(canAccessVue(user([], ['leader']))).toBe(true)
-    expect(canAccessVue(user([], ['admin_lpmpp']))).toBe(false)
-    expect(canAccessVue(user([], ['super_admin']))).toBe(false)
+    expect(canAccessVue(user([], ['admin_lpmpp']))).toBe(true)
+    expect(canAccessVue(user([], ['super_admin']))).toBe(true)
   })
 })

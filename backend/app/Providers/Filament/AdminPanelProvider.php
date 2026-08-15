@@ -36,6 +36,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(RedirectToUnifiedLoginController::class)
+            ->brandLogo(asset('itda-logo.webp'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('itda-logo.webp'))
             ->colors([
                 'primary' => Color::Sky,
             ])
@@ -46,11 +49,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->navigationItems([
-                NavigationItem::make('Buka Dashboard Pimpinan')
-                    ->url(fn (): string => rtrim((string) config('app.frontend_url'), '/').'/app/analytics')
-                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-                    ->group('Akses')
-                    ->visible(fn (): bool => auth()->user()?->hasRole('leader') ?? false),
+                $this->analyticsNavigationItem(),
             ])
             ->navigation(function (): NavigationBuilder|bool {
                 $user = auth()->user();
@@ -60,7 +59,10 @@ class AdminPanelProvider extends PanelProvider
                 }
 
                 $navigation = (new NavigationBuilder)
-                    ->items(Dashboard::getNavigationItems())
+                    ->items([
+                        ...Dashboard::getNavigationItems(),
+                        $this->analyticsNavigationItem(),
+                    ])
                     ->group('Survei', [
                         ...CreateSurveyForm::getNavigationItems(),
                         ...InstrumentVersionResource::getNavigationItems(),
@@ -91,5 +93,14 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+    }
+
+    private function analyticsNavigationItem(): NavigationItem
+    {
+        return NavigationItem::make('Buka Dashboard Hasil Survei')
+            ->url(fn (): string => rtrim((string) config('app.frontend_url'), '/').'/app/analytics')
+            ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+            ->group('Akses')
+            ->visible(fn (): bool => auth()->user()?->hasAnyRole(['admin_lpmpp', 'super_admin', 'leader']) ?? false);
     }
 }

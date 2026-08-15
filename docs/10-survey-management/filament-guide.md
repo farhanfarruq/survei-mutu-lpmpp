@@ -33,3 +33,7 @@ Workflow campaign review yang diminta Phase 10 belum tercakup pada draft Phase 0
 - `POST /surveys/{survey_id}/review-decisions` — `campaign.approve`, reviewer berbeda dari creator.
 
 Perubahan contract telah tervalidasi. Endpoint production belum diimplementasikan pada Phase 10; delivery surface yang dibuat adalah Filament.
+
+## Form survei sederhana
+
+Halaman `CreateSurveyForm` menyediakan contoh awal untuk mahasiswa, dosen, tenaga kependidikan, alumni, dan stakeholder. Contoh hanya mengisi pertanyaan awal dan tetap dapat diedit. Form mengumpulkan nama kategori dan indikator dengan bahasa pengguna; kode internal dibuat otomatis. Nama kosong memakai `Umum` dan `Jawaban responden`. Tipe `Ya / Tidak` otomatis disimpan sebagai single choice dengan dua opsi tersebut. Admin tidak perlu membuat scale atau mengetik ID/kode teknis untuk alur dasar.

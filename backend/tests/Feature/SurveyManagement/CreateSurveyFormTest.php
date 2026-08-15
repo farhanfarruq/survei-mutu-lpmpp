@@ -121,4 +121,76 @@ class CreateSurveyFormTest extends TestCase
 
         $this->actingAs($user)->get('/admin/buat-formulir')->assertForbidden();
     }
+
+    public function test_simple_form_creates_readable_categories_indicators_and_yes_no_options(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $unit = OrganizationalUnit::factory()->create();
+        $admin = User::factory()->create();
+        $admin->assignRole('admin_lpmpp');
+        $admin->organizationalUnits()->attach($unit, ['scope_mode' => 'self', 'is_primary' => true]);
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($admin);
+
+        Livewire::test(CreateSurveyForm::class)
+            ->fillForm([
+                'owner_unit_id' => $unit->id,
+                'title' => 'Survei Kemudahan Layanan',
+                'questions' => [
+                    [
+                        'item_text' => 'Apakah informasi mudah ditemukan?',
+                        'response_type' => 'yes_no',
+                        'category_name' => 'Informasi',
+                        'indicator_name' => 'Kemudahan akses',
+                        'is_required' => true,
+                    ],
+                    [
+                        'item_text' => 'Seberapa puas Anda dengan waktu pelayanan?',
+                        'response_type' => 'scale',
+                        'category_name' => 'Pelayanan',
+                        'indicator_name' => 'Kecepatan pelayanan',
+                        'is_required' => true,
+                    ],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $version = InstrumentVersion::query()
+            ->with(['categories.indicators', 'sections.questions.options', 'sections.questions.indicator.category'])
+            ->sole();
+
+        $this->assertEqualsCanonicalizing(
+            ['Informasi', 'Pelayanan'],
+            $version->categories->pluck('name')->all(),
+        );
+        $this->assertEqualsCanonicalizing(
+            ['Kemudahan akses', 'Kecepatan pelayanan'],
+            $version->categories->flatMap->indicators->pluck('name')->all(),
+        );
+
+        $yesNo = $version->sections->first()->questions->firstWhere('item_text', 'Apakah informasi mudah ditemukan?');
+        $this->assertSame('single_choice', $yesNo->response_type);
+        $this->assertSame(['Ya', 'Tidak'], $yesNo->options->pluck('label')->all());
+        $this->assertSame('Informasi', $yesNo->indicator->category->name);
+    }
+
+    public function test_audience_preset_fills_editable_questions_without_technical_codes(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $unit = OrganizationalUnit::factory()->create();
+        $admin = User::factory()->create();
+        $admin->assignRole('admin_lpmpp');
+        $admin->organizationalUnits()->attach($unit, ['scope_mode' => 'self', 'is_primary' => true]);
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($admin);
+
+        Livewire::test(CreateSurveyForm::class)
+            ->set('data.audience_preset', 'alumni')
+            ->assertSet('data.questions.0.item_text', 'Seberapa puas Anda terhadap layanan alumni?')
+            ->assertSet('data.questions.1.response_type', 'yes_no')
+            ->assertSet('data.questions.2.category_name', 'Saran');
+    }
 }

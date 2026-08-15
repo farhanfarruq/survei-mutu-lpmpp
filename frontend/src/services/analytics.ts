@@ -5,12 +5,22 @@ export type MetricRow = {
   code: string
   name?: string
   text?: string
+  category_code?: string | null
+  category_name?: string | null
+  indicator_name?: string | null
+  response_type?: string | null
   n: number
   missing: number
   mean: number | null
   normalized_score: number | null
   interpretation: string | null
   top_two_box?: number | null
+  distribution?: Array<{
+    value: string | number
+    label?: string
+    count: number
+    percentage: number
+  }>
   suppressed: boolean
 }
 
@@ -32,6 +42,7 @@ export type DashboardSeries = {
 
 export type LeadershipDashboard = {
   summary: null | {
+    survey_id: string
     survey: string
     unit: string
     period: string
@@ -48,15 +59,30 @@ export type LeadershipDashboard = {
   accessible_summary: string
 }
 
-export type DashboardFilters = { unit_id?: string; period_id?: string; survey_id?: string; group_id?: string; drilldown?: 'item' }
+export type DashboardFilters = {
+  unit_id?: string
+  period_id?: string
+  survey_id?: string
+  group_id?: string
+  drilldown?: 'item'
+}
 
-export async function fetchLeadershipDashboard(filters: DashboardFilters = {}): Promise<LeadershipDashboard> {
-  const response = await api.get<{ data: LeadershipDashboard }>('/api/v1/leadership/results', { params: filters })
+export async function fetchLeadershipDashboard(
+  filters: DashboardFilters = {},
+): Promise<LeadershipDashboard> {
+  const response = await api.get<{ data: LeadershipDashboard }>('/api/v1/leadership/results', {
+    params: filters,
+  })
   return response.data.data
 }
 
-export async function requestReportExport(snapshotId: string, format: 'csv' | 'json'): Promise<{ id: string; state: string; expires_at: string | null }> {
-  const response = await api.post<{ data: { id: string; state: string; expires_at: string | null } }>(
+export async function requestReportExport(
+  snapshotId: string,
+  format: 'csv' | 'json',
+): Promise<{ id: string; state: string; expires_at: string | null }> {
+  const response = await api.post<{
+    data: { id: string; state: string; expires_at: string | null }
+  }>(
     '/api/v1/report-exports',
     { aggregate_snapshot_id: snapshotId, format, filters: {} },
     { headers: { 'Idempotency-Key': crypto.randomUUID() } },

@@ -37,3 +37,5 @@ Scheduler `governed-notifications` berjalan setiap jam. UI notifikasi hanya meng
 ## Vue
 
 Route production `/app/ai`, `/app/notifications`, `/app/follow-up`, dan `/app/follow-ups/actions/:id` memakai route guard permission. Semua view memiliki heading/landmark, native label/control, loading, empty, error, live status, tabel pendukung, keyboard-operable actions, serta reflow 320 px.
+
+Workspace AI mengambil daftar analysis run yang telah dirilis, reviewer independen, dan job terbaru dari endpoint scoped. Pengguna memilih nama survei/unit/reviewer dari daftar, bukan mengetik ID teknis. Menu AI dan tindak lanjut ditampilkan untuk admin LPMPP, super admin, dan leader hanya bila permission terkait dimiliki; otorisasi backend tetap menjadi sumber keputusan akhir.

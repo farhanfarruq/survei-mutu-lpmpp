@@ -16,6 +16,8 @@ Analysis run menyimpan input hash, formula version, parameter, status, dan times
 
 `/app/analytics` membutuhkan `report.read`. Halaman memiliki filter unit/periode, KPI, ECharts bar dan line yang sesuai, tabel data, ringkasan screen-reader, drill-down item agregat terkontrol, catatan keterbatasan, serta loading/empty/error states. Layout berubah menjadi satu kolom pada layar kecil.
 
+Kategori dapat dilihat sebagai grafik batang atau radar (radar aktif bila sedikitnya tiga kategori). Distribusi jawaban dapat dilihat sebagai grafik batang atau donut. Tabel angka tetap tersedia sebagai alternatif aksesibel dan sumber nilai presisi; pilihan visual tidak mengubah perhitungan backend.
+
 ## Ekspor
 
 CSV dan JSON dibuat oleh queue dari snapshot released. Record ekspor menyimpan requester, format, filter provenance, checksum, status, error, dan expiry maksimal 24 jam. Download membutuhkan tiket requester-bound yang berlaku paling lama 10 menit dan hanya dapat digunakan sekali. Request, completion, release, dan download dicatat ke activity log.

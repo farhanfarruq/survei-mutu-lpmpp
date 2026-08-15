@@ -55,6 +55,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/report-exports/{reportExport}/download-tickets', [AnalyticsReportingController::class, 'ticket'])->middleware('permission:report.export|report.approve');
         Route::get('/report-downloads/{token}', [AnalyticsReportingController::class, 'download'])->middleware('permission:report.export|report.approve');
 
+        Route::get('/ai-workspace-options', [AiController::class, 'workspace'])->middleware('permission:ai.read|ai.execute|ai.review');
         Route::get('/ai-provider-configs', [AiController::class, 'configs'])->middleware('permission:ai.config|ai.execute');
         Route::post('/ai-provider-configs', [AiController::class, 'saveConfig'])->middleware('permission:ai.config');
         Route::post('/ai-provider-configs/{aiProviderConfig}/connection-tests', [AiController::class, 'testConnection'])->middleware('permission:ai.config');

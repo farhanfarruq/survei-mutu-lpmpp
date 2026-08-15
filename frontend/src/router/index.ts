@@ -2,7 +2,7 @@ import { nextTick } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import AppShell from '@/layouts/AppShell.vue'
-import { canAccessVue, destinationAfterLogin } from '@/navigation'
+import { analyticsRoles, canAccessVue, destinationAfterLogin } from '@/navigation'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -54,13 +54,17 @@ const router = createRouter({
           path: 'analytics',
           name: 'executive-dashboard',
           component: () => import('@/views/ExecutiveDashboardView.vue'),
-          meta: { title: 'Dashboard Eksekutif', permission: 'report.read', roles: ['leader'] },
+          meta: {
+            title: 'Dashboard Hasil Survei',
+            permission: 'report.read',
+            roles: analyticsRoles,
+          },
         },
         {
           path: 'ai',
           name: 'ai-workspace',
           component: () => import('@/views/AiWorkspaceView.vue'),
-          meta: { title: 'AI Analysis', permission: 'ai.read', roles: ['leader'] },
+          meta: { title: 'Analisis AI', permission: 'ai.read', roles: analyticsRoles },
         },
         {
           path: 'notifications',
@@ -76,13 +80,13 @@ const router = createRouter({
           path: 'follow-up',
           name: 'follow-up-workspace',
           component: () => import('@/views/FollowUpView.vue'),
-          meta: { title: 'Tindak Lanjut', permission: 'finding.read', roles: ['leader'] },
+          meta: { title: 'Tindak Lanjut', permission: 'finding.read', roles: analyticsRoles },
         },
         {
           path: 'follow-ups/actions/:id',
           name: 'follow-up-action',
           component: () => import('@/views/FollowUpView.vue'),
-          meta: { title: 'Detail Tindak Lanjut', permission: 'action.read', roles: ['leader'] },
+          meta: { title: 'Detail Tindak Lanjut', permission: 'action.read', roles: analyticsRoles },
         },
       ],
     },

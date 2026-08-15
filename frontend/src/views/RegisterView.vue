@@ -51,7 +51,7 @@ async function submit() {
   <main id="main-content" class="login-page foundation-login">
     <section class="login-panel" aria-labelledby="register-title">
       <div class="brand-lockup">
-        <span class="brand-mark" aria-hidden="true">SM</span>
+        <img class="brand-logo" src="/itda-logo.webp" alt="Logo ITDA" />
         <div><strong>SIMUTU</strong><span>Sistem Survei Mutu LPMPP</span></div>
       </div>
       <p class="eyebrow">Akun responden</p>
