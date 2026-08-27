@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\SurveyState;
 use App\Exceptions\DomainRuleViolation;
 use App\Models\ConfidentialResponseLink;
+use App\Models\OrganizationalUnit;
 use App\Models\Question;
 use App\Models\RespondentSession;
 use App\Models\ResponseIdempotencyKey;
@@ -26,13 +27,14 @@ class ResponseCollection
     public function eligibleSurveys(User $user): EloquentCollection
     {
         $unitIds = $this->scope->accessibleUnitIds($user);
+        $targetUnitIds = $this->unitIdsWithAncestors($unitIds);
 
         return Survey::query()
             ->where('state', SurveyState::Active)
             ->where('opens_at', '<=', now())
             ->where('closes_at', '>', now())
             ->whereHas('targets', fn ($query) => $query
-                ->whereIn('target_unit_id', $unitIds)
+                ->whereIn('target_unit_id', $targetUnitIds)
                 ->orWhereHas('respondentGroup', fn ($query) => $query->whereIn('organizational_unit_id', $unitIds)))
             ->whereDoesntHave('participations', fn ($query) => $query
                 ->where('user_id', $user->id)
@@ -44,6 +46,28 @@ class ResponseCollection
             ])
             ->orderBy('closes_at')
             ->get();
+    }
+
+    /** @param Collection<int, string> $unitIds */
+    private function unitIdsWithAncestors(Collection $unitIds): Collection
+    {
+        $ids = $unitIds->filter()->unique()->values();
+        $frontier = $ids;
+
+        while ($frontier->isNotEmpty()) {
+            $parents = OrganizationalUnit::query()
+                ->whereIn('id', $frontier)
+                ->pluck('parent_id')
+                ->filter()
+                ->reject(fn (string $id): bool => $ids->containsStrict($id))
+                ->unique()
+                ->values();
+
+            $ids = $ids->merge($parents)->unique()->values();
+            $frontier = $parents;
+        }
+
+        return $ids;
     }
 
     /** @return array{invitation_token: string, expires_at: string} */

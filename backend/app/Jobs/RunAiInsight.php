@@ -38,15 +38,15 @@ class RunAiInsight implements ShouldQueue
             }
             $content = $safety->validateOutput($generated['content']);
             AiUsageLog::create(['ai_job_id' => $job->id, 'provider' => $job->config->provider, 'model' => $job->config->model, 'input_tokens' => $inputTokens, 'output_tokens' => $outputTokens, 'cost_micros' => $cost, 'latency_ms' => $generated['latency_ms'], 'outcome' => 'success']);
-            AiResult::create(['ai_job_id' => $job->id, 'content' => $content, 'label' => 'AI-generated draft — requires human review', 'source_scope' => $job->source_scope, 'provider' => $job->config->provider, 'model' => $job->config->model, 'generated_at' => now()]);
+            AiResult::create(['ai_job_id' => $job->id, 'content' => $content, 'label' => 'Ringkasan AI — periksa sebelum digunakan', 'source_scope' => $job->source_scope, 'provider' => $job->config->provider, 'model' => $job->config->model, 'generated_at' => now(), 'review_status' => 'not_required']);
             $job->update(['state' => 'completed', 'completed_at' => now(), 'resource_version' => $job->resource_version + 1]);
             activity('ai')->performedOn($job)->causedBy($job->requester)->withProperties(['outcome' => 'success', 'source_scope' => $job->source_scope])->log('ai_job_completed');
         } catch (\Throwable $error) {
             $code = $error instanceof DomainRuleViolation ? $error->ruleCode : (in_array($error->getMessage(), ['provider_rate_limited', 'provider_budget_exceeded'], true) ? $error->getMessage() : 'provider_failed');
             AiUsageLog::create(['ai_job_id' => $job->id, 'provider' => $job->config->provider, 'model' => $job->config->model, 'outcome' => 'fallback']);
-            AiResult::firstOrCreate(['ai_job_id' => $job->id], ['content' => $this->fallback($job), 'label' => 'Deterministic fallback — not AI-generated', 'source_scope' => $job->source_scope, 'provider' => $job->config->provider, 'model' => $job->config->model, 'generated_at' => now()]);
+            AiResult::firstOrCreate(['ai_job_id' => $job->id], ['content' => $this->fallback($job), 'label' => 'Fallback deterministik — bukan keluaran AI', 'source_scope' => $job->source_scope, 'provider' => $job->config->provider, 'model' => $job->config->model, 'generated_at' => now(), 'review_status' => 'not_required']);
             $job->update(['state' => 'completed_with_fallback', 'failure_code' => $code, 'completed_at' => now(), 'resource_version' => $job->resource_version + 1]);
-            $notifications->send($job->requester, 'ai_failure', 'AI memakai fallback', 'Provider AI gagal atau output dikarantina. Gunakan dashboard statistik dan review fallback.', "/app/ai?job={$job->id}", ['ai_job_id' => $job->id, 'status' => 'fallback'], $job->id);
+            $notifications->send($job->requester, 'ai_failure', 'AI memakai fallback', 'Provider AI gagal atau output dikarantina. Gunakan dashboard statistik sebagai sumber utama.', "/app/ai?job={$job->id}", ['ai_job_id' => $job->id, 'status' => 'fallback'], $job->id);
             activity('ai')->performedOn($job)->causedBy($job->requester)->withProperties(['outcome' => 'fallback', 'failure_code' => $code])->log('ai_job_fallback');
         }
     }

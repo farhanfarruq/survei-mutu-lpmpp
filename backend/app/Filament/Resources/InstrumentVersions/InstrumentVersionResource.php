@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\InstrumentVersions;
 
 use App\Enums\InstrumentStatus;
+use App\Filament\Pages\CreateSurveyForm;
 use App\Filament\Resources\InstrumentVersions\Pages\CreateInstrumentVersion;
 use App\Filament\Resources\InstrumentVersions\Pages\EditInstrumentVersion;
 use App\Filament\Resources\InstrumentVersions\Pages\ListInstrumentVersions;
@@ -12,6 +13,7 @@ use App\Models\InstrumentVersion;
 use App\Models\SurveyTemplate;
 use App\Services\OrganizationalScope;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -84,7 +86,20 @@ class InstrumentVersionResource extends Resource
             TextColumn::make('version')->label('Versi')->state(fn (InstrumentVersion $record) => $record->versionLabel())->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
             TextColumn::make('comparability_status')->label('Komparabilitas')->badge()->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
         ])->recordActions([
-            ViewAction::make()->label('Lihat'),
+            Action::make('editSimple')
+                ->label('Lanjutkan edit')
+                ->icon(Heroicon::OutlinedPencilSquare)
+                ->url(fn (InstrumentVersion $record): string => CreateSurveyForm::getUrl(['record' => $record]))
+                ->visible(fn (InstrumentVersion $record): bool => auth()->user()->can('update', $record)),
+            ViewAction::make()->label(function (InstrumentVersion $record): string {
+                $status = $record->getRawOriginal('status');
+
+                return match (true) {
+                    in_array($status, ['draft', 'returned'], true) && auth()->user()->can('submitReview', $record) => 'Periksa & ajukan',
+                    $status === 'approved' && auth()->user()->can('duplicate', $record) => 'Buat versi revisi',
+                    default => 'Lihat',
+                };
+            }),
         ]);
     }
 

@@ -4,8 +4,10 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\CreateSurveyForm;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\Activities\ActivityResource;
 use App\Filament\Resources\InstrumentVersions\InstrumentVersionResource;
 use App\Filament\Resources\OrganizationalUnits\OrganizationalUnitResource;
+use App\Filament\Resources\QuestionBankEntries\QuestionBankEntryResource;
 use App\Filament\Resources\Roles\RoleResource;
 use App\Filament\Resources\Surveys\SurveyResource;
 use App\Filament\Resources\Users\UserResource;
@@ -20,11 +22,13 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -42,6 +46,19 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Sky,
             ])
+            ->databaseNotifications(fn (): bool => auth()->user()?->can('notification.read') ?? false)
+            ->databaseNotificationsPolling('30s')
+            ->renderHook(PanelsRenderHook::HEAD_END, fn (): HtmlString => new HtmlString(<<<'HTML'
+                <style>
+                    .fi-topbar-database-notifications-btn .fi-badge,
+                    .fi-sidebar-database-notifications-btn .fi-badge {
+                        min-width: 1.25rem;
+                        border-radius: 9999px;
+                        background: #dc2626 !important;
+                        color: #fff !important;
+                    }
+                </style>
+                HTML))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -65,9 +82,14 @@ class AdminPanelProvider extends PanelProvider
                     ])
                     ->group('Survei', [
                         ...CreateSurveyForm::getNavigationItems(),
+                        ...QuestionBankEntryResource::getNavigationItems(),
                         ...InstrumentVersionResource::getNavigationItems(),
                         ...SurveyResource::getNavigationItems(),
                     ], collapsible: false);
+
+                $navigation->group('Pengawasan', [
+                    ...ActivityResource::getNavigationItems(),
+                ], collapsible: false);
 
                 if ($user->hasRole('super_admin')) {
                     $navigation->group('Pengaturan Sistem', [

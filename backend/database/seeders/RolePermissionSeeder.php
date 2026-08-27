@@ -56,8 +56,8 @@ class RolePermissionSeeder extends Seeder
             'ai.config',
             'ai.execute',
             'ai.read',
-            'ai.review',
             'notification.read',
+            'activity.read',
             'finding.read',
             'finding.create',
             'finding.update',
@@ -77,7 +77,6 @@ class RolePermissionSeeder extends Seeder
         $roles = [
             'super_admin' => $permissions,
             'admin_lpmpp' => array_values(array_diff($permissions, [
-                'organization.scope.all',
                 'permissions.view',
                 'roles.view',
                 'roles.create',
@@ -96,6 +95,7 @@ class RolePermissionSeeder extends Seeder
                 'report.read',
                 'ai.read',
                 'notification.read',
+                'activity.read',
                 'finding.read',
                 'action.read',
                 'follow-up.dashboard.read',

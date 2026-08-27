@@ -4,6 +4,7 @@ namespace Tests\Feature\Foundation;
 
 use App\Models\AggregateSnapshot;
 use App\Models\OrganizationalUnit;
+use App\Models\Survey;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -49,12 +50,22 @@ class AdminDashboardTest extends TestCase
         $this->assertDatabaseCount('survey_responses', 0);
         $this->assertSame(82.4, (float) data_get(AggregateSnapshot::query()->latest('generated_at')->firstOrFail()->metrics, 'overall.normalized_score'));
 
+        Survey::query()->where('state', 'closed')->firstOrFail()->update(['state' => 'returned']);
+
         $admin = User::query()->where('email', 'admin.lpmpp@example.test')->firstOrFail();
         $this->actingAs($admin)
             ->get('/admin')
             ->assertOk()
             ->assertSeeText('Dashboard Mutu')
-            ->assertSeeText('Ringkasan periode berjalan')
+            ->assertSeeText('Perlu Anda tangani')
+            ->assertSeeText('Perlu dilengkapi')
+            ->assertSeeText('Menunggu pemeriksaan')
+            ->assertSeeText('Siap diterbitkan')
+            ->assertSeeText('Antrean kerja survei')
+            ->assertSeeText('Lengkapi dan ajukan ulang')
+            ->assertSeeText('Buat formulir survei')
+            ->assertSeeText('Kelola survei')
+            ->assertSeeText('Riwayat aktivitas')
             ->assertSeeText('Partisipasi per survei')
             ->assertSeeText('Tren indeks mutu')
             ->assertSeeText('Capaian per kategori')

@@ -33,7 +33,7 @@
                     <x-filament::icon icon="heroicon-o-document-text" />
                 </div>
                 <div>
-                    <p>Editor formulir</p>
+                    <p>{{ $this->isEditing() ? 'Edit formulir' : 'Editor formulir' }}</p>
                     <h1 x-text="form?.title || 'Formulir tanpa judul'"></h1>
                 </div>
             </div>
@@ -41,7 +41,7 @@
             <div class="survey-builder__toolbar-actions">
                 <span class="survey-builder__draft-status">
                     <span aria-hidden="true"></span>
-                    Draf baru
+                    {{ $this->isEditing() ? 'Mengubah draf' : 'Draf baru' }}
                 </span>
                 <x-filament::button
                     type="submit"
@@ -49,7 +49,7 @@
                     wire:loading.attr="disabled"
                     wire:target="create"
                 >
-                    <span wire:loading.remove wire:target="create">Simpan formulir</span>
+                    <span wire:loading.remove wire:target="create">{{ $this->isEditing() ? 'Simpan perubahan' : 'Simpan formulir' }}</span>
                     <span wire:loading wire:target="create">Menyimpan...</span>
                 </x-filament::button>
             </div>
@@ -329,9 +329,36 @@
         }
 
         .survey-builder__editor .fi-fo-repeater-item {
-            border-color: var(--builder-border);
+            overflow: hidden;
+            margin-bottom: 1rem;
+            border: 2px solid #cbd5e1;
+            border-left: 5px solid var(--builder-accent);
             border-radius: 0.875rem;
             box-shadow: none;
+        }
+
+        .survey-builder__editor .fi-fo-repeater-item-header {
+            border-bottom: 1px solid #cbd5e1;
+            background: #f8fafc;
+        }
+
+        .survey-builder__editor .fi-fo-repeater-item-header-label {
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .dark .survey-builder__editor .fi-fo-repeater-item {
+            border-color: #475569;
+            border-left-color: #38bdf8;
+        }
+
+        .dark .survey-builder__editor .fi-fo-repeater-item-header {
+            border-bottom-color: #475569;
+            background: #1e293b;
+        }
+
+        .dark .survey-builder__editor .fi-fo-repeater-item-header-label {
+            color: #f8fafc;
         }
 
         .survey-builder__editor .fi-fo-repeater-add-between-action-ctn {

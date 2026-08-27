@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import BaseAlert from '@/components/ui/BaseAlert.vue'
@@ -50,7 +50,7 @@ async function submit() { if (!action.value) return; await run(async () => { act
 async function verify() { if (!action.value) return; await run(async () => { action.value = await phase13Api.verifyAction(action.value!, verificationForm); status.value = 'Keputusan verifikasi dicatat.' }) }
 async function run(callback: () => Promise<void>) { busy.value = true; error.value = ''; status.value = ''; try { await callback() } catch (caught) { error.value = normalizeApiError(caught).message } finally { busy.value = false } }
 
-onMounted(load)
+watch(() => route.params.id, () => void load(), { immediate: true })
 </script>
 
 <template>

@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\SurveyState;
 use App\Models\AggregateSnapshot;
+use App\Models\Survey;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -13,6 +15,38 @@ final class LeadershipDashboard
     public function data(User $user, array $filters): array
     {
         $unitIds = $this->scope->accessibleUnitIds($user);
+        $surveyOptions = Survey::query()
+            ->leftJoin('organizational_units as survey_units', 'survey_units.id', '=', 'surveys.owner_unit_id')
+            ->leftJoin('survey_periods as survey_periods_filter', 'survey_periods_filter.id', '=', 'surveys.survey_period_id')
+            ->select([
+                'surveys.*',
+                'survey_units.name as unit_name',
+                'survey_periods_filter.name as period_name',
+            ])
+            ->withExists(['aggregateSnapshots as has_released_result' => fn ($query) => $query->where('state', 'released')])
+            ->whereIn('surveys.owner_unit_id', $unitIds)
+            ->whereIn('surveys.state', [
+                SurveyState::Scheduled->value,
+                SurveyState::Active->value,
+                SurveyState::Closed->value,
+                SurveyState::Archived->value,
+            ])
+            ->latest('surveys.created_at')
+            ->get()
+            ->map(fn (Survey $survey): array => [
+                'id' => $survey->id,
+                'name' => $survey->name,
+                'state' => $survey->state->value,
+                'responses_count' => $survey->responses_count,
+                'reporting_threshold' => $survey->reporting_threshold,
+                'has_released_result' => (bool) $survey->has_released_result,
+                'unit_id' => $survey->owner_unit_id,
+                'unit' => $survey->unit_name,
+                'period_id' => $survey->survey_period_id,
+                'period' => $survey->period_name,
+            ])
+            ->values();
+        $selectedSurvey = $surveyOptions->firstWhere('id', $filters['survey_id'] ?? null);
         $query = AggregateSnapshot::query()->with(['survey.instrumentVersion', 'ownerUnit', 'period', 'respondentGroup'])
             ->where('state', 'released')->whereIn('owner_unit_id', $unitIds);
         if ($filters['unit_id'] ?? null) {
@@ -52,6 +86,8 @@ final class LeadershipDashboard
         ])->values();
 
         return [
+            'survey_options' => $surveyOptions,
+            'selected_survey' => $selectedSurvey,
             'summary' => $latest ? [
                 'survey' => $latest->survey->name,
                 'survey_id' => $latest->survey_id,

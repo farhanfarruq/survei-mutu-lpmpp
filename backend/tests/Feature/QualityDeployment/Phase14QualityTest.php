@@ -140,7 +140,7 @@ class Phase14QualityTest extends TestCase
         $elapsedMs = (hrtime(true) - $startedAt) / 1_000_000;
 
         $this->assertCount(100, $result['comparison']['series']);
-        $this->assertLessThanOrEqual(10, count(DB::getQueryLog()), 'Dashboard relations must remain eagerly loaded.');
+        $this->assertLessThanOrEqual(11, count(DB::getQueryLog()), 'Dashboard relations and survey filter options must remain bounded.');
         $this->assertLessThan(1000, $elapsedMs, 'Synthetic 100-snapshot dashboard exceeded its local performance budget.');
     }
 }

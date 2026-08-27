@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { LogOut, Menu, X } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { analyticsRoles, navigationFor } from '@/navigation'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationsStore } from '@/stores/notifications'
 
 const auth = useAuthStore()
+const notifications = useNotificationsStore()
 const router = useRouter()
 const drawerOpen = ref(false)
 const navigation = computed(() => navigationFor(auth.user))
@@ -16,8 +18,13 @@ const homeDestination = computed(() =>
 
 async function logout() {
   await auth.logout()
+  notifications.reset()
   await router.replace('/login')
 }
+
+onMounted(() => {
+  if (auth.can('notification.read')) void notifications.load()
+})
 
 function focusMain() {
   document.getElementById('foundation-main')?.focus()
@@ -57,7 +64,15 @@ function focusMain() {
           <a v-if="item.external" :href="item.to"
             >{{ item.label }} <span class="sr-only">(membuka panel administrasi)</span></a
           >
-          <RouterLink v-else :to="item.to">{{ item.label }}</RouterLink>
+          <RouterLink v-else :to="item.to"
+            ><span>{{ item.label }}</span
+            ><span
+              v-if="item.to === '/app/notifications' && notifications.unread"
+              class="nav-unread-badge"
+              :aria-label="`${notifications.unread} notifikasi belum dibaca`"
+              >{{ notifications.unreadLabel }}</span
+            ></RouterLink
+          >
         </template>
       </nav>
       <button class="button sidebar-logout" type="button" @click="logout">
@@ -82,9 +97,15 @@ function focusMain() {
         <nav>
           <template v-for="item in navigation" :key="item.to"
             ><a v-if="item.external" :href="item.to">{{ item.label }}</a
-            ><RouterLink v-else :to="item.to" @click="drawerOpen = false">{{
-              item.label
-            }}</RouterLink></template
+            ><RouterLink v-else :to="item.to" @click="drawerOpen = false"
+              ><span>{{ item.label }}</span
+              ><span
+                v-if="item.to === '/app/notifications' && notifications.unread"
+                class="nav-unread-badge"
+                :aria-label="`${notifications.unread} notifikasi belum dibaca`"
+                >{{ notifications.unreadLabel }}</span
+              ></RouterLink
+            ></template
           >
         </nav>
       </aside>

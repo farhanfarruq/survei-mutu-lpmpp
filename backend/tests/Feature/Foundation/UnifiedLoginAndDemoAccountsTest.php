@@ -73,10 +73,10 @@ class UnifiedLoginAndDemoAccountsTest extends TestCase
             ['admin_lpmpp', 'leader', 'respondent', 'super_admin'],
             Role::query()->where('guard_name', 'web')->orderBy('name')->pluck('name')->all(),
         );
-        $this->assertSame(46, Role::findByName('admin_lpmpp')->permissions()->count());
+        $this->assertSame(47, Role::findByName('admin_lpmpp')->permissions()->count());
+        $this->assertTrue(Role::findByName('admin_lpmpp')->hasPermissionTo('organization.scope.all'));
         $this->assertFalse(Role::findByName('admin_lpmpp')->hasPermissionTo('roles.view'));
         $this->assertTrue(Role::findByName('admin_lpmpp')->hasPermissionTo('action.verify'));
-        $this->assertTrue(Role::findByName('admin_lpmpp')->hasPermissionTo('ai.review'));
         $this->assertDatabaseHas('users', ['email' => 'reviewer@example.test']);
         $this->assertDatabaseHas('users', ['email' => 'analis@example.test']);
         $this->assertDatabaseHas('users', ['email' => 'pic@example.test']);

@@ -22,7 +22,7 @@ class SurveyManagementPolicyTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_policy_intersects_permission_with_organizational_scope(): void
+    public function test_admin_can_manage_templates_across_organizational_units(): void
     {
         $this->seed(RolePermissionSeeder::class);
         $inside = OrganizationalUnit::factory()->create();
@@ -35,8 +35,8 @@ class SurveyManagementPolicyTest extends TestCase
 
         $this->assertTrue($admin->can('view', $templateInside));
         $this->assertTrue($admin->can('update', $templateInside));
-        $this->assertFalse($admin->can('view', $templateOutside));
-        $this->assertFalse($admin->can('update', $templateOutside));
+        $this->assertTrue($admin->can('view', $templateOutside));
+        $this->assertTrue($admin->can('update', $templateOutside));
     }
 
     public function test_survey_policy_disallows_configuration_edit_after_publish(): void

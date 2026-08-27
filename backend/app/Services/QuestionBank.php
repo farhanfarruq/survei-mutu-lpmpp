@@ -13,6 +13,10 @@ class QuestionBank
 {
     public function addToSection(QuestionBankEntry $entry, InstrumentSection $section, Indicator $indicator, ?Scale $scale, string $code, int $position): Question
     {
+        if (! $entry->is_active) {
+            throw new DomainRuleViolation('question_bank_entry_inactive', 'Pertanyaan bank yang nonaktif tidak dapat ditambahkan ke formulir.');
+        }
+
         $versionId = $section->instrument_version_id;
         if ($indicator->category->instrument_version_id !== $versionId || ($scale && $scale->instrument_version_id !== $versionId)) {
             throw new DomainRuleViolation('question_reference_mismatch', 'Indikator/skala harus berasal dari versi instrumen yang sama.');

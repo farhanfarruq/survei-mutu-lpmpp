@@ -56,6 +56,13 @@ class SurveyPolicy
         return $user->can('campaign.update') && in_array($survey->state, [SurveyState::Scheduled, SurveyState::Active], true) && $this->scope->allows($user, $survey->owner_unit_id);
     }
 
+    public function reschedule(User $user, Survey $survey): bool
+    {
+        return $user->can('campaign.update')
+            && in_array($survey->getRawOriginal('state'), [SurveyState::Scheduled->value, SurveyState::Active->value], true)
+            && $this->scope->allows($user, $survey->owner_unit_id);
+    }
+
     public function archive(User $user, Survey $survey): bool
     {
         return $user->can('campaign.update') && $survey->state === SurveyState::Closed && $this->scope->allows($user, $survey->owner_unit_id);

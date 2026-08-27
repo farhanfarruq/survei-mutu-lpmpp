@@ -33,6 +33,16 @@ class NotificationController extends Controller
         $record = $request->user()->notifications()->findOrFail($notification);
         $record->markAsRead();
 
-        return response()->json(['data' => ['id' => $record->id, 'read_at' => $record->read_at?->toIso8601String()]]);
+        return response()->json([
+            'data' => ['id' => $record->id, 'read_at' => $record->read_at?->toIso8601String()],
+            'meta' => ['unread' => $request->user()->unreadNotifications()->count()],
+        ]);
+    }
+
+    public function readAll(Request $request): JsonResponse
+    {
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        return response()->json(['meta' => ['unread' => 0]]);
     }
 }

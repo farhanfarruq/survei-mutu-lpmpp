@@ -8,4 +8,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateQuestionBankEntry extends CreateRecord
 {
     protected static string $resource = QuestionBankEntryResource::class;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return QuestionBankEntryResource::normalizeFormData($data);
+    }
 }

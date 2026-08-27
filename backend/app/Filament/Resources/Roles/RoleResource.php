@@ -38,6 +38,7 @@ class RoleResource extends Resource
         'report' => ['Analisis & laporan', 'laporan'],
         'ai' => ['AI & notifikasi', 'AI'],
         'notification' => ['AI & notifikasi', 'notifikasi'],
+        'activity' => ['AI & notifikasi', 'riwayat aktivitas'],
         'finding' => ['Temuan & tindak lanjut', 'temuan'],
         'action' => ['Temuan & tindak lanjut', 'tindak lanjut'],
         'follow-up.dashboard' => ['Temuan & tindak lanjut', 'dasbor tindak lanjut'],

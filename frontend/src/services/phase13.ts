@@ -24,7 +24,6 @@ export type AiJob = {
   source_scope: Record<string, unknown>
   failure_code: string | null
   result_id: string | null
-  review_status: string | null
 }
 export type AiResult = {
   id: string
@@ -34,9 +33,6 @@ export type AiResult = {
   provider: string
   model: string
   generated_at: string
-  review_status: string
-  review_note: string | null
-  version: number
 }
 export type AiWorkspaceOptions = {
   runs: Array<{
@@ -47,13 +43,11 @@ export type AiWorkspaceOptions = {
     period: string | null
     completed_at: string
   }>
-  reviewers: Array<{ id: number; name: string; unit_ids: string[] }>
   jobs: Array<{
     id: string
     survey: string
     unit: string | null
     state: string
-    review_status: string | null
     created_at: string
   }>
 }
@@ -149,17 +143,11 @@ export const phase13Api = {
       })
     ).data.data
   },
-  async createAiJob(
-    runId: string,
-    provider_config_id: string,
-    prompt_template_id: string,
-    reviewer_id: number,
-  ) {
+  async createAiJob(runId: string, provider_config_id: string, prompt_template_id: string) {
     return (
       await api.post<{ data: AiJob }>(`/api/v1/analysis-runs/${runId}/ai-jobs`, {
         provider_config_id,
         prompt_template_id,
-        reviewer_id,
       })
     ).data.data
   },
@@ -169,27 +157,20 @@ export const phase13Api = {
   async aiResult(id: string) {
     return (await api.get<{ data: AiResult }>(`/api/v1/ai-results/${id}`)).data.data
   },
-  async reviewAiResult(
-    result: AiResult,
-    decision: 'edit' | 'approve' | 'reject',
-    note: string,
-    content?: Record<string, unknown>,
-  ) {
-    return (
-      await api.post<{ data: AiResult }>(
-        `/api/v1/ai-results/${result.id}/review-decisions`,
-        { decision, note, ...(content && { content }) },
-        { headers: { 'If-Match': `"${result.version}"` } },
-      )
-    ).data.data
-  },
   async notifications() {
     return (
       await api.get<{ data: AppNotification[]; meta: { unread: number } }>('/api/v1/notifications')
     ).data
   },
   async readNotification(id: string) {
-    await api.post(`/api/v1/notifications/${id}/read`)
+    return (
+      await api.post<{ data: { id: string; read_at: string }; meta: { unread: number } }>(
+        `/api/v1/notifications/${id}/read`,
+      )
+    ).data
+  },
+  async readAllNotifications() {
+    return (await api.post<{ meta: { unread: number } }>('/api/v1/notifications/read-all')).data
   },
   async findings(state = '') {
     return (

@@ -6,6 +6,7 @@ use App\Enums\SurveyState;
 use App\Exceptions\DomainRuleViolation;
 use App\Models\Survey;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 
 class SurveyLifecycle
 {
@@ -41,9 +42,6 @@ class SurveyLifecycle
     {
         if ($survey->state !== SurveyState::InReview) {
             throw new DomainRuleViolation('invalid_survey_transition', 'Hanya survey in-review yang dapat disetujui.');
-        }
-        if ($survey->created_by === $actor->id) {
-            throw new DomainRuleViolation('self_approval_forbidden', 'Pembuat survey tidak boleh menjadi approver tunggal.');
         }
         $this->assertPreflight($survey);
         $survey->forceFill(['state' => SurveyState::Approved, 'approved_by' => $actor->id, 'approved_at' => now(), 'review_note' => $note ? trim($note) : null])->save();
@@ -109,6 +107,45 @@ class SurveyLifecycle
         $survey->forceFill(['state' => SurveyState::Closed, 'closed_at' => now()])->save();
         $this->audit($survey, $actor, 'closed');
         $this->notifications->closing($survey);
+
+        return $survey->refresh();
+    }
+
+    public function reschedule(Survey $survey, User $actor, array $data): Survey
+    {
+        $state = SurveyState::tryFrom((string) $survey->getRawOriginal('state'));
+        if (! in_array($state, [SurveyState::Scheduled, SurveyState::Active], true)) {
+            throw new DomainRuleViolation('survey_schedule_locked', 'Jadwal hanya dapat diubah saat survei terjadwal atau sedang berjalan.');
+        }
+
+        $name = trim((string) ($data['name'] ?? ''));
+        $closesAt = CarbonImmutable::parse($data['closes_at'] ?? '');
+        $actionOwnerId = $data['action_owner_id'] ?? null;
+        if ($name === '' || mb_strlen($name) > 240) {
+            throw new DomainRuleViolation('survey_name_invalid', 'Nama survei wajib diisi dan maksimal 240 karakter.');
+        }
+        if (! $closesAt->isFuture()) {
+            throw new DomainRuleViolation('survey_close_invalid', 'Batas akhir survei harus berada di masa depan.');
+        }
+        if (! User::query()->whereKey($actionOwnerId)->where('is_active', true)->whereDoesntHave('roles', fn ($query) => $query->where('name', 'respondent'))->exists()) {
+            throw new DomainRuleViolation('survey_action_owner_invalid', 'Penanggung jawab harus merupakan staf aktif.');
+        }
+
+        $changes = ['name' => $name, 'closes_at' => $closesAt, 'action_owner_id' => $actionOwnerId];
+        if ($state === SurveyState::Scheduled) {
+            $opensAt = CarbonImmutable::parse($data['opens_at'] ?? '');
+            if (! $opensAt->isFuture() || $closesAt->lessThanOrEqualTo($opensAt)) {
+                throw new DomainRuleViolation('survey_schedule_invalid', 'Waktu mulai harus di masa depan dan batas akhir harus setelah waktu mulai.');
+            }
+            $changes['opens_at'] = $opensAt;
+        }
+
+        $before = $survey->only(array_keys($changes));
+        Survey::withoutEvents(fn () => $survey->forceFill($changes)->save());
+        activity('survey')->performedOn($survey)->causedBy($actor)->event('schedule_updated')->withProperties([
+            'old' => $before,
+            'attributes' => $survey->only(array_keys($changes)),
+        ])->log('Jadwal operasional survei diperbarui');
 
         return $survey->refresh();
     }

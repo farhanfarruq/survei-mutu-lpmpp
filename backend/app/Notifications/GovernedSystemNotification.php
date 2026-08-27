@@ -19,7 +19,18 @@ class GovernedSystemNotification extends Notification
 
     public function toArray(object $notifiable): array
     {
-        return ['event_type' => $this->eventType, 'title' => $this->title, 'message' => $this->message, 'route' => $this->route, 'context' => $this->context];
+        return [
+            'format' => 'filament',
+            'event_type' => $this->eventType,
+            'title' => $this->title,
+            'message' => $this->message,
+            'body' => $this->message,
+            'status' => 'info',
+            'icon' => 'heroicon-o-bell',
+            'iconColor' => 'danger',
+            'route' => $this->route,
+            'context' => $this->context,
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

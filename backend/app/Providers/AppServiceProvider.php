@@ -78,11 +78,13 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $event->user->forceFill(['last_login_at' => now()])->saveQuietly();
-            activity('authentication')->causedBy($event->user)->event('login')->log('User logged in');
+            if (! $event->user->hasRole('respondent')) {
+                activity('authentication')->causedBy($event->user)->event('login')->log('User logged in');
+            }
         });
 
         Event::listen(Logout::class, function (Logout $event): void {
-            if ($event->user instanceof User) {
+            if ($event->user instanceof User && ! $event->user->hasRole('respondent')) {
                 activity('authentication')->causedBy($event->user)->event('logout')->log('User logged out');
             }
         });

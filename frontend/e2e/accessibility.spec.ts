@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
-const priorityRoutes = ['/login']
+const priorityRoutes = ['/login', '/register']
 
 for (const path of priorityRoutes) {
   test(`${path} has no detectable WCAG A/AA violations`, async ({ page }) => {
@@ -10,6 +10,13 @@ for (const path of priorityRoutes) {
         status: 401,
         contentType: 'application/problem+json',
         body: JSON.stringify({ code: 'unauthenticated', detail: 'Sesi tidak tersedia.' }),
+      }),
+    )
+    await page.route('**/api/v1/auth/registration-options', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { programs: [] } }),
       }),
     )
     await page.goto(path)

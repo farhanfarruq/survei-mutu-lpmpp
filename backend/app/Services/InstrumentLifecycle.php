@@ -51,9 +51,6 @@ class InstrumentLifecycle
         if ($version->status !== InstrumentStatus::InReview) {
             throw new DomainRuleViolation('invalid_instrument_transition', 'Hanya versi in-review yang dapat disetujui.');
         }
-        if ($version->created_by === $actor->id) {
-            throw new DomainRuleViolation('self_approval_forbidden', 'Pembuat versi tidak boleh menjadi approver tunggal.');
-        }
         $this->assertPreflight($version);
 
         $currentHash = $this->preflight->contentHash($version);

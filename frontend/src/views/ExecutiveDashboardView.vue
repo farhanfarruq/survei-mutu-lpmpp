@@ -4,6 +4,7 @@ import {
   GridComponent,
   LegendComponent,
   RadarComponent,
+  TitleComponent,
   TooltipComponent,
 } from 'echarts/components'
 import { use } from 'echarts/core'
@@ -14,10 +15,12 @@ import VChart from 'vue-echarts'
 import BaseAlert from '@/components/ui/BaseAlert.vue'
 import { normalizeApiError } from '@/services/api'
 import {
+  downloadReportExport,
   fetchLeadershipDashboard,
-  requestReportExport,
   type DashboardSeries,
+  type DashboardSurveyOption,
   type LeadershipDashboard,
+  type ReportExportFormat,
 } from '@/services/analytics'
 import { useAuthStore } from '@/stores/auth'
 
@@ -29,6 +32,7 @@ use([
   GridComponent,
   LegendComponent,
   RadarComponent,
+  TitleComponent,
   TooltipComponent,
   SVGRenderer,
 ])
@@ -44,26 +48,30 @@ const surveyId = ref('')
 const groupId = ref('')
 const categoryCode = ref('')
 const questionId = ref('')
-const exportFormat = ref<'csv' | 'json'>('csv')
+const exportFormat = ref<ReportExportFormat>('csv')
 const exportStatus = ref('')
+const exporting = ref(false)
 const categoryChartType = ref<'bar' | 'radar'>('bar')
 const answerChartType = ref<'bar' | 'donut'>('bar')
+const replaceChartOption = { notMerge: true }
 
 const units = computed(() => [
   ...new Map(
-    baselineSeries.value.map((row) => [row.unit_id, { id: row.unit_id, name: row.unit }]),
+    (dashboard.value?.survey_options ?? []).map((row) => [
+      row.unit_id,
+      { id: row.unit_id, name: row.unit },
+    ]),
   ).values(),
 ])
 const periods = computed(() => [
   ...new Map(
-    baselineSeries.value.map((row) => [row.period_id, { id: row.period_id, name: row.period }]),
+    (dashboard.value?.survey_options ?? []).map((row) => [
+      row.period_id,
+      { id: row.period_id, name: row.period },
+    ]),
   ).values(),
 ])
-const surveys = computed(() => [
-  ...new Map(
-    baselineSeries.value.map((row) => [row.survey_id, { id: row.survey_id, name: row.survey }]),
-  ).values(),
-])
+const surveys = computed(() => dashboard.value?.survey_options ?? [])
 const groups = computed(() => [
   ...new Map(
     baselineSeries.value
@@ -89,6 +97,16 @@ const selectedItem = computed(
     null,
 )
 const canUseRadar = computed(() => displayedCategories.value.length >= 3)
+const surveyStateLabels: Record<DashboardSurveyOption['state'], string> = {
+  scheduled: 'Terjadwal',
+  active: 'Sedang berjalan',
+  closed: 'Ditutup',
+  archived: 'Diarsipkan',
+}
+
+function surveyStateLabel(state: DashboardSurveyOption['state']) {
+  return surveyStateLabels[state]
+}
 const categoryChart = computed(() => {
   const names = displayedCategories.value.map((row) => row.name ?? row.code)
   const scores = displayedCategories.value.map((row) => row.normalized_score ?? 0)
@@ -130,14 +148,39 @@ const answerChart = computed(() => {
   const distribution = selectedItem.value?.distribution ?? []
 
   if (answerChartType.value === 'donut') {
+    const responseCount = distribution.reduce((total, row) => total + row.count, 0)
+
     return {
       aria: { enabled: true, decal: { show: true } },
       tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-      legend: { bottom: 0 },
+      legend: { bottom: 0, left: 'center', type: 'scroll' },
+      title: {
+        text: responseCount.toLocaleString('id-ID'),
+        subtext: 'jawaban',
+        left: 'center',
+        top: '35%',
+        textStyle: { color: '#10243e', fontSize: 22, fontWeight: 700 },
+        subtextStyle: { color: '#4f6578', fontSize: 12 },
+      },
       series: [
         {
           type: 'pie',
-          radius: ['42%', '68%'],
+          radius: ['40%', '66%'],
+          center: ['50%', '44%'],
+          avoidLabelOverlap: true,
+          minShowLabelAngle: 10,
+          label: {
+            show: true,
+            formatter: '{b}\n{d}%',
+            color: '#334a64',
+            fontSize: 12,
+            lineHeight: 16,
+          },
+          labelLine: { show: true, length: 10, length2: 6 },
+          itemStyle: { borderColor: '#ffffff', borderWidth: 2 },
+          emphasis: {
+            label: { show: true, formatter: '{b}\n{d}%', fontWeight: 700 },
+          },
           data: distribution.map((row) => ({
             name: row.label ?? String(row.value),
             value: row.count,
@@ -165,6 +208,15 @@ function changeCategory(event: Event) {
   categoryCode.value = (event.target as HTMLSelectElement).value
   if (categoryCode.value) categoryChartType.value = 'bar'
   questionId.value = displayedItems.value[0]?.id ?? ''
+}
+
+async function changeSurvey(event: Event) {
+  surveyId.value = (event.target as HTMLSelectElement).value
+  unitId.value = ''
+  periodId.value = ''
+  groupId.value = ''
+  categoryCode.value = ''
+  await load(false)
 }
 
 async function load(preserveOptions = true) {
@@ -198,14 +250,19 @@ async function exportReport() {
   const snapshotId = dashboard.value?.comparison.series[0]?.snapshot_id
   if (!snapshotId) return
   exportStatus.value = 'Menyiapkan ekspor…'
+  exporting.value = true
   try {
-    const result = await requestReportExport(snapshotId, exportFormat.value)
-    exportStatus.value =
-      result.state === 'completed'
-        ? 'Ekspor siap. Buka pusat unduhan untuk membuat tiket sekali pakai.'
-        : 'Ekspor masuk antrean.'
+    await downloadReportExport(snapshotId, exportFormat.value)
+    exportStatus.value = `File ${exportFormat.value.toUpperCase()} berhasil diunduh.`
   } catch (caught) {
-    exportStatus.value = normalizeApiError(caught).message
+    const apiError = normalizeApiError(caught)
+    exportStatus.value = apiError.status
+      ? apiError.message
+      : caught instanceof Error
+        ? caught.message
+        : apiError.message
+  } finally {
+    exporting.value = false
   }
 }
 
@@ -228,13 +285,14 @@ onMounted(() => load())
           >Format<select v-model="exportFormat">
             <option value="csv">CSV</option>
             <option value="json">JSON</option>
+            <option value="pdf">PDF</option>
           </select></label
         ><button
           class="button button-secondary"
-          :disabled="!dashboard?.summary"
+          :disabled="exporting || !dashboard?.summary"
           @click="exportReport"
         >
-          Buat ekspor
+          {{ exporting ? 'Menyiapkan…' : 'Unduh ekspor' }}
         </button>
       </div>
     </div>
@@ -259,10 +317,10 @@ onMounted(() => load())
         </select></label
       >
       <label
-        >Survei<select v-model="surveyId">
+        >Survei<select :value="surveyId" @change="changeSurvey">
           <option value="">Semua survei</option>
           <option v-for="survey in surveys" :key="survey.id" :value="survey.id">
-            {{ survey.name }}
+            {{ survey.name }} — {{ surveyStateLabel(survey.state) }}
           </option>
         </select></label
       >
@@ -291,8 +349,28 @@ onMounted(() => load())
       <button class="button button-secondary" @click="load(false)">Coba lagi</button></BaseAlert
     >
     <div v-else-if="!dashboard?.summary" class="empty-state">
-      <h2>Belum ada hasil released</h2>
-      <p>Ubah filter atau tunggu snapshot analisis dirilis oleh pemeriksa yang berwenang.</p>
+      <template v-if="dashboard?.selected_survey">
+        <h2>{{ dashboard.selected_survey.name }}</h2>
+        <p>
+          Status {{ surveyStateLabel(dashboard.selected_survey.state).toLowerCase() }} ·
+          {{ dashboard.selected_survey.responses_count }} respons masuk.
+        </p>
+        <p
+          v-if="
+            dashboard.selected_survey.responses_count <
+            dashboard.selected_survey.reporting_threshold
+          "
+        >
+          Distribusi jawaban anonim akan tersedia setelah minimal
+          {{ dashboard.selected_survey.reporting_threshold }} respons terpenuhi dan hasil analisis
+          dirilis.
+        </p>
+        <p v-else>Hasil anonim belum dianalisis atau belum dirilis.</p>
+      </template>
+      <template v-else>
+        <h2>Belum ada hasil analisis</h2>
+        <p>Pilih survei untuk melihat status dan hasil jawaban anonimnya.</p>
+      </template>
     </div>
 
     <template v-else>
@@ -349,7 +427,12 @@ onMounted(() => load())
               </select></label
             >
           </div>
-          <VChart class="analytics-chart" :option="categoryChart" autoresize />
+          <VChart
+            class="analytics-chart"
+            :option="categoryChart"
+            :update-options="replaceChartOption"
+            autoresize
+          />
         </section>
         <section class="panel" aria-labelledby="trend-chart-title">
           <h2 id="trend-chart-title">Tren periode</h2>
@@ -442,10 +525,15 @@ onMounted(() => load())
                 </select></label
               >
             </div>
-            <VChart class="analytics-chart" :option="answerChart" autoresize />
+            <VChart
+              class="analytics-chart"
+              :option="answerChart"
+              :update-options="replaceChartOption"
+              autoresize
+            />
           </section>
           <section class="table-panel" aria-labelledby="anonymous-answer-title">
-            <h3 id="anonymous-answer-title">Semua jawaban anonim</h3>
+            <h3 id="anonymous-answer-title">Distribusi jawaban anonim</h3>
             <div class="table-scroll">
               <table>
                 <thead>

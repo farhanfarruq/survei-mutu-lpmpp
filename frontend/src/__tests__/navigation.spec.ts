@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { canAccessVue, destinationAfterLogin, navigationFor } from '@/navigation'
+import router from '@/router'
 import type { AuthUser } from '@/stores/auth'
 
 const user = (permissions: string[], roles = ['respondent']): AuthUser => ({
@@ -64,6 +65,14 @@ describe('navigationFor', () => {
       'Notifikasi',
       'Panel Administrasi',
     ])
+  })
+})
+
+describe('route access metadata', () => {
+  it('allows every role shown in the notification sidebar to open the page', () => {
+    const route = router.getRoutes().find(({ name }) => name === 'notifications')
+
+    expect(route?.meta.roles).toEqual(['respondent', 'admin_lpmpp', 'super_admin', 'leader'])
   })
 })
 

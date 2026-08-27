@@ -33,9 +33,20 @@ class Phase13Test extends TestCase
         Mail::fake();
     }
 
-    public function test_ai_is_aggregate_only_masked_reviewed_and_falls_back_without_external_calls(): void
+    public function test_openrouter_config_accepts_display_case_provider(): void
     {
-        [$run, $snapshot, $unit, $analyst, $reviewer, $leader] = $this->releasedAnalysis();
+        $admin = User::factory()->create();
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin)->postJson('/api/v1/ai-provider-configs', [
+            'provider' => 'OpenRouter', 'model' => 'openai/gpt-4o-mini', 'base_url' => 'https://openrouter.ai/api/v1', 'api_key' => 'test-openrouter-secret', 'enabled' => true,
+            'max_input_tokens' => 8000, 'max_output_tokens' => 2000, 'max_cost_micros' => 100000, 'input_cost_micros_per_1k' => 0, 'output_cost_micros_per_1k' => 0, 'timeout_seconds' => 30, 'rate_limit_per_minute' => 10,
+        ])->assertCreated()->assertJsonPath('data.provider', 'OpenRouter');
+    }
+
+    public function test_ai_is_aggregate_only_masked_immediately_readable_and_falls_back_without_external_calls(): void
+    {
+        [$run, $snapshot, $unit, $analyst, , $leader] = $this->releasedAnalysis();
         $admin = User::factory()->create();
         $admin->assignRole('super_admin');
         $fake = new FakeAiProvider;
@@ -43,8 +54,7 @@ class Phase13Test extends TestCase
 
         $workspace = $this->actingAs($analyst)->getJson('/api/v1/ai-workspace-options')->assertOk();
         $this->assertContains($run->id, collect($workspace->json('data.runs'))->pluck('id'));
-        $this->assertContains($reviewer->id, collect($workspace->json('data.reviewers'))->pluck('id'));
-        $this->assertArrayNotHasKey('identity_number', $workspace->json('data.reviewers.0'));
+        $this->assertArrayNotHasKey('reviewers', $workspace->json('data'));
 
         $config = $this->actingAs($admin)->postJson('/api/v1/ai-provider-configs', [
             'provider' => 'mock', 'model' => 'fake-v1', 'base_url' => 'https://mock.invalid', 'api_key' => 'test-secret-never-sent', 'enabled' => true,
@@ -59,11 +69,9 @@ class Phase13Test extends TestCase
         ])->assertUnprocessable()->assertJsonPath('code', 'ai_governance_blocked');
         $promptId = $this->actingAs($admin)->postJson('/api/v1/ai-prompt-templates', ['use_case' => 'comprehensive_insight', 'system_prompt' => 'Gunakan hanya agregat dan keluarkan JSON sesuai schema.', 'active' => true])->assertCreated()->json('data.id');
 
-        $outsideReviewer = $this->scopedUser('admin_lpmpp', OrganizationalUnit::factory()->create());
-        $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId, 'reviewer_id' => $outsideReviewer->id])->assertUnprocessable()->assertJsonPath('code', 'ai_governance_blocked');
-
-        $job = $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId, 'reviewer_id' => $reviewer->id])->assertAccepted();
+        $job = $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId])->assertAccepted();
         $jobId = $job->json('data.id');
+        $this->assertDatabaseHas('ai_jobs', ['id' => $jobId, 'reviewer_id' => null]);
         $this->assertContains(
             $jobId,
             collect($this->actingAs($analyst)->getJson('/api/v1/ai-workspace-options')->json('data.jobs'))->pluck('id'),
@@ -72,21 +80,20 @@ class Phase13Test extends TestCase
         $this->assertSame('[REDACTED_UNTRUSTED_TEXT]', $fake->lastPayload['indicators'][0]['name']);
         $this->assertArrayNotHasKey('answers', $fake->lastPayload);
         $this->assertDatabaseHas('ai_usage_logs', ['ai_job_id' => $jobId, 'outcome' => 'success']);
-        $this->actingAs($leader)->getJson("/api/v1/ai-results/{$resultId}")->assertNotFound();
-        $this->actingAs($analyst)->withHeader('If-Match', '"1"')->postJson("/api/v1/ai-results/{$resultId}/review-decisions", ['decision' => 'approve', 'note' => 'Tidak boleh self review.'])->assertForbidden();
-        $approved = $this->actingAs($reviewer)->withHeader('If-Match', '"1"')->postJson("/api/v1/ai-results/{$resultId}/review-decisions", ['decision' => 'approve', 'note' => 'Agregat dan batas interpretasi sudah sesuai.'])->assertOk()->assertJsonPath('data.review_status', 'approved');
-        $this->actingAs($reviewer)->withHeader('If-Match', '"1"')->postJson("/api/v1/ai-results/{$resultId}/review-decisions", ['decision' => 'reject', 'note' => 'Stale.'])->assertStatus(412)->assertJsonPath('code', 'version_conflict');
-        $this->actingAs($leader)->getJson("/api/v1/ai-results/{$resultId}")->assertOk()->assertJsonPath('data.label', 'AI-generated draft — requires human review');
+        $visibleResult = $this->actingAs($leader)->getJson("/api/v1/ai-results/{$resultId}")->assertOk()->assertJsonPath('data.label', 'Ringkasan AI — periksa sebelum digunakan');
+        $this->assertArrayNotHasKey('review_status', $visibleResult->json('data'));
+        $this->assertDatabaseHas('ai_results', ['id' => $resultId, 'review_status' => 'not_required']);
+        $this->actingAs($analyst)->postJson("/api/v1/ai-results/{$resultId}/review-decisions", [])->assertNotFound();
 
         $this->actingAs($analyst)->postJson('/api/v1/findings', ['source_type' => 'low_indicator', 'aggregate_snapshot_id' => $snapshot->id, 'owner_unit_id' => $unit->id, 'source_indicator_code' => 'IND', 'title' => 'Indikator agregat rendah', 'description' => 'Dibuat dari snapshot released.', 'source_evidence' => 'Snapshot statistik deterministik.', 'severity' => 'high', 'due_on' => now()->addMonth()->toDateString()])->assertCreated()->assertJsonPath('data.source_score', 55);
 
         $fake->contentOverride = ['summary' => 'Tidak memenuhi schema'];
-        $quarantinedJob = $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId, 'reviewer_id' => $reviewer->id])->assertAccepted()->json('data.id');
+        $quarantinedJob = $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId])->assertAccepted()->json('data.id');
         $this->actingAs($analyst)->getJson("/api/v1/ai-jobs/{$quarantinedJob}")->assertOk()->assertJsonPath('data.state', 'completed_with_fallback')->assertJsonPath('data.failure_code', 'ai_output_quarantined');
 
         $fake->contentOverride = null;
         $fake->fails = true;
-        $fallbackJob = $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId, 'reviewer_id' => $reviewer->id])->assertAccepted()->json('data.id');
+        $fallbackJob = $this->actingAs($analyst)->postJson("/api/v1/analysis-runs/{$run->id}/ai-jobs", ['provider_config_id' => $configId, 'prompt_template_id' => $promptId])->assertAccepted()->json('data.id');
         $this->actingAs($analyst)->getJson("/api/v1/ai-jobs/{$fallbackJob}")->assertOk()->assertJsonPath('data.state', 'completed_with_fallback')->assertJsonPath('data.failure_code', 'provider_failed');
         $this->assertDatabaseHas('notifications', ['notifiable_id' => $analyst->id]);
         $this->assertDatabaseHas('activity_log', ['description' => 'ai_job_fallback']);

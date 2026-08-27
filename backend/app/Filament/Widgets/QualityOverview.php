@@ -2,7 +2,7 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\AggregateSnapshot;
+use App\Filament\Resources\Surveys\SurveyResource;
 use App\Models\FollowUpAction;
 use App\Models\Survey;
 use App\Services\OrganizationalScope;
@@ -13,31 +13,24 @@ class QualityOverview extends StatsOverviewWidget
 {
     protected static bool $isLazy = false;
 
-    protected static ?int $sort = 1;
+    protected static ?int $sort = 0;
 
-    protected ?string $heading = 'Ringkasan periode berjalan';
+    protected ?string $heading = 'Perlu Anda tangani';
 
-    protected ?string $description = 'Ringkasan data survei dari unit yang dapat Anda lihat.';
+    protected ?string $description = 'Pekerjaan operasional dari unit yang dapat Anda kelola.';
 
     protected function getStats(): array
     {
         $unitIds = app(OrganizationalScope::class)->accessibleUnitIds(auth()->user());
-        $surveys = Survey::query()
+        $surveyCounts = Survey::query()
             ->whereIn('owner_unit_id', $unitIds)
-            ->whereIn('state', ['active', 'closed'])
-            ->withSum('targets', 'eligible_count')
-            ->get();
-        $eligible = (int) $surveys->sum('targets_sum_eligible_count');
-        $responses = (int) $surveys->sum('responses_count');
-        $responseRate = $eligible > 0 ? round(100 * $responses / $eligible, 1) : 0;
-        $latest = AggregateSnapshot::query()
-            ->with(['survey', 'period'])
-            ->where('state', 'released')
-            ->where('suppressed', false)
-            ->whereIn('owner_unit_id', $unitIds)
-            ->latest('generated_at')
-            ->first();
-        $score = $latest ? (float) data_get($latest->metrics, 'overall.normalized_score', 0) : null;
+            ->whereIn('state', ['draft', 'returned', 'in_review', 'approved'])
+            ->selectRaw('state, count(*) as total')
+            ->groupBy('state')
+            ->pluck('total', 'state');
+        $needsCompletion = (int) ($surveyCounts['draft'] ?? 0) + (int) ($surveyCounts['returned'] ?? 0);
+        $needsReview = (int) ($surveyCounts['in_review'] ?? 0);
+        $readyToPublish = (int) ($surveyCounts['approved'] ?? 0);
         $overdue = FollowUpAction::query()
             ->whereHas('finding', fn ($query) => $query->whereIn('owner_unit_id', $unitIds))
             ->whereDate('due_on', '<', today())
@@ -45,18 +38,22 @@ class QualityOverview extends StatsOverviewWidget
             ->count();
 
         return [
-            Stat::make('Survei aktif', $surveys->where('state.value', 'active')->count())
-                ->description('Campaign yang sedang menerima respons')
-                ->color('primary'),
-            Stat::make('Tingkat respons', number_format($responseRate, 1, ',', '.').' %')
-                ->description(number_format($responses, 0, ',', '.').' dari '.number_format($eligible, 0, ',', '.').' target')
-                ->color($responseRate >= 70 ? 'success' : 'warning'),
-            Stat::make('Indeks mutu terbaru', $score === null ? 'Belum tersedia' : number_format($score, 1, ',', '.'))
-                ->description($latest ? data_get($latest, 'period.name').' · '.data_get($latest, 'survey.name') : 'Belum ada snapshot released')
-                ->color($score !== null && $score >= 80 ? 'success' : 'warning'),
+            Stat::make('Perlu dilengkapi', $needsCompletion)
+                ->description('Draf atau survei yang dikembalikan')
+                ->color($needsCompletion > 0 ? 'warning' : 'success')
+                ->url(SurveyResource::getUrl()),
+            Stat::make('Menunggu pemeriksaan', $needsReview)
+                ->description('Perlu keputusan reviewer')
+                ->color($needsReview > 0 ? 'info' : 'success')
+                ->url(SurveyResource::getUrl()),
+            Stat::make('Siap diterbitkan', $readyToPublish)
+                ->description('Sudah disetujui dan perlu dijadwalkan')
+                ->color($readyToPublish > 0 ? 'primary' : 'success')
+                ->url(SurveyResource::getUrl()),
             Stat::make('Tindak lanjut terlambat', $overdue)
                 ->description($overdue > 0 ? 'Memerlukan perhatian dan eskalasi' : 'Seluruh tindak lanjut sesuai tenggat')
-                ->color($overdue > 0 ? 'danger' : 'success'),
+                ->color($overdue > 0 ? 'danger' : 'success')
+                ->url(rtrim((string) config('app.frontend_url'), '/').'/app/follow-up'),
         ];
     }
 }

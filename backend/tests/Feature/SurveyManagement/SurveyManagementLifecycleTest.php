@@ -56,15 +56,26 @@ class SurveyManagementLifecycleTest extends TestCase
         $this->assertCount(5, $copy->scales->first()->points);
     }
 
-    public function test_creator_cannot_self_approve_instrument(): void
+    public function test_creator_can_approve_own_instrument_and_survey(): void
     {
         [$admin, , $unit] = $this->actors();
         $version = $this->completeInstrument($admin, $unit);
-        $lifecycle = app(InstrumentLifecycle::class);
-        $lifecycle->submitForReview($version, $admin);
+        $instrumentLifecycle = app(InstrumentLifecycle::class);
+        $instrumentLifecycle->submitForReview($version, $admin);
 
-        $this->expectExceptionObject(new DomainRuleViolation('self_approval_forbidden', 'Pembuat versi tidak boleh menjadi approver tunggal.'));
-        $lifecycle->approve($version->refresh(), $admin);
+        $version = $instrumentLifecycle->approve($version->refresh(), $admin);
+
+        $this->assertSame(InstrumentStatus::Approved, $version->status);
+        $this->assertSame($admin->id, $version->approved_by);
+
+        $survey = $this->completeSurvey($admin, $unit, $version, now()->addHour(), now()->addWeek());
+        $surveyLifecycle = app(SurveyLifecycle::class);
+        $surveyLifecycle->submitForReview($survey, $admin);
+
+        $survey = $surveyLifecycle->approve($survey->refresh(), $admin);
+
+        $this->assertSame(SurveyState::Approved, $survey->state);
+        $this->assertSame($admin->id, $survey->approved_by);
     }
 
     public function test_survey_review_publish_close_archive_and_snapshot(): void
@@ -149,6 +160,20 @@ class SurveyManagementLifecycleTest extends TestCase
 
         $this->assertSame($entry->item_text, $question->item_text);
         $this->assertSame($entry->id, $question->question_bank_entry_id);
+
+        $entry->update(['item_text' => 'Pertanyaan bank diperbarui']);
+        $this->assertNotSame($entry->item_text, $question->fresh()->item_text);
+    }
+
+    public function test_inactive_question_bank_entry_cannot_be_copied(): void
+    {
+        [$admin, , $unit] = $this->actors();
+        $version = $this->completeInstrument($admin, $unit);
+        $entry = QuestionBankEntry::factory()->create(['owner_unit_id' => $unit->id, 'created_by' => $admin->id, 'is_active' => false]);
+
+        $this->expectException(DomainRuleViolation::class);
+        $this->expectExceptionMessage('nonaktif');
+        app(QuestionBank::class)->addToSection($entry, $version->sections->first(), $version->categories->first()->indicators->first(), $version->scales->first(), 'BANK-OFF', 2);
     }
 
     /** @return array{User, User, OrganizationalUnit} */

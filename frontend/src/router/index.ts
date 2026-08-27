@@ -73,7 +73,7 @@ const router = createRouter({
           meta: {
             title: 'Notifikasi',
             permission: 'notification.read',
-            roles: ['respondent', 'leader'],
+            roles: ['respondent', ...analyticsRoles],
           },
         },
         {

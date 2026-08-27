@@ -94,6 +94,7 @@ class FilamentAccessTest extends TestCase
             'report.read',
             'ai.read',
             'notification.read',
+            'activity.read',
             'finding.read',
             'action.read',
             'follow-up.dashboard.read',
@@ -131,9 +132,10 @@ class FilamentAccessTest extends TestCase
             ->assertSee('Buat Formulir')
             ->assertSee('Formulir Saya')
             ->assertSee('Kelola Survei')
+            ->assertSee('Bank Pertanyaan')
+            ->assertSee('Riwayat Aktivitas')
             ->assertDontSee('Unit Organisasi')
             ->assertDontSee('Pengguna')
-            ->assertDontSee('Bank Pertanyaan')
             ->assertDontSee('Kelompok Responden')
             ->assertDontSee('Periode Survei')
             ->assertDontSee('Template Survei');
@@ -165,11 +167,12 @@ class FilamentAccessTest extends TestCase
             ->assertSee('Buat Formulir')
             ->assertSee('Formulir Saya')
             ->assertSee('Kelola Survei')
+            ->assertSee('Bank Pertanyaan')
+            ->assertSee('Riwayat Aktivitas')
             ->assertSee('Unit Organisasi')
             ->assertSee('Pengguna')
             ->assertSee('Peran')
             ->assertDontSee('Permission')
-            ->assertDontSee('Bank Pertanyaan')
             ->assertDontSee('Kelompok Responden')
             ->assertDontSee('Periode Survei')
             ->assertDontSee('Template Survei');

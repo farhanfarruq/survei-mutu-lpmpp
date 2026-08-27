@@ -324,7 +324,7 @@ async function submit() {
                     @input="changed(question, ($event.target as HTMLInputElement).value)"
                 /></label>
                 <label v-else-if="question.response_type === 'long_text'" class="textarea-field"
-                  ><span>Hindari nama, NIM, email, atau identitas langsung.</span
+                  ><span class="sr-only">{{ question.text }}</span
                   ><textarea
                     maxlength="5000"
                     :value="inputValue(question.id)"

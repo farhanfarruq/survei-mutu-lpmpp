@@ -4,6 +4,7 @@ namespace Tests\Feature\Foundation;
 
 use App\Models\OrganizationalUnit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
@@ -33,5 +34,13 @@ class HealthAndAuditTest extends TestCase
         $this->assertSame('updated', $activity->event);
         $this->assertSame((string) $unit->id, (string) $activity->subject_id);
         $this->assertArrayNotHasKey('password', $activity->properties->get('attributes', []));
+    }
+
+    public function test_activity_causer_key_matches_user_primary_key_type(): void
+    {
+        $this->assertSame(
+            Schema::getColumnType('users', 'id'),
+            Schema::getColumnType('activity_log', 'causer_id'),
+        );
     }
 }

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\ReportExport;
 use App\Services\NotificationHub;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
@@ -22,11 +23,13 @@ class GenerateReportExport implements ShouldQueue
     {
         $this->export->update(['state' => 'running', 'error_message' => null]);
         try {
-            $snapshot = $this->export->snapshot;
+            $snapshot = $this->export->snapshot->loadMissing(['survey', 'ownerUnit', 'period']);
             $path = "report-exports/{$this->export->id}.{$this->export->format}";
-            $content = $this->export->format === 'json'
-                ? json_encode(['provenance' => $this->export->filter_provenance, 'metrics' => $snapshot->metrics, 'last_updated_at' => $snapshot->generated_at?->toIso8601String()], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR)
-                : $this->csv($snapshot->metrics, $this->export->filter_provenance, $snapshot->generated_at?->toIso8601String());
+            $content = match ($this->export->format) {
+                'json' => json_encode(['provenance' => $this->export->filter_provenance, 'metrics' => $snapshot->metrics, 'last_updated_at' => $snapshot->generated_at?->toIso8601String()], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR),
+                'pdf' => Pdf::loadView('reports.dashboard', ['snapshot' => $snapshot, 'metrics' => $snapshot->metrics])->setPaper('a4')->output(),
+                default => $this->csv($snapshot->metrics, $this->export->filter_provenance, $snapshot->generated_at?->toIso8601String()),
+            };
             if (! Storage::disk($this->export->disk)->put($path, $content)) {
                 throw new \RuntimeException('Gagal menyimpan berkas ekspor.');
             }

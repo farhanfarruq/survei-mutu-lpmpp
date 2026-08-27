@@ -97,7 +97,7 @@ class AnalyticsReportingController extends Controller
 
     public function createExport(Request $request, OrganizationalScope $scope): JsonResponse
     {
-        $validated = $request->validate(['aggregate_snapshot_id' => ['required', 'uuid', 'exists:aggregate_snapshots,id'], 'format' => ['required', 'in:csv,json'], 'filters' => ['nullable', 'array']]);
+        $validated = $request->validate(['aggregate_snapshot_id' => ['required', 'uuid', 'exists:aggregate_snapshots,id'], 'format' => ['required', 'in:csv,json,pdf'], 'filters' => ['nullable', 'array']]);
         $idempotencyKey = (string) $request->header('Idempotency-Key');
         if (! preg_match('/^[A-Za-z0-9._:-]{16,128}$/', $idempotencyKey)) {
             throw new DomainRuleViolation('idempotency_key_required', 'Idempotency-Key 16–128 karakter diperlukan.', 428);

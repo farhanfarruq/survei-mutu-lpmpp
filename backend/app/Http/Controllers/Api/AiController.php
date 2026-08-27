@@ -10,9 +10,7 @@ use App\Models\AiPromptTemplate;
 use App\Models\AiProviderConfig;
 use App\Models\AiResult;
 use App\Models\AnalysisRun;
-use App\Models\User;
 use App\Services\AiOrchestrator;
-use App\Services\AiSafety;
 use App\Services\OrganizationalScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,25 +39,11 @@ class AiController extends Controller
                 'survey_periods.name as period',
                 'analysis_runs.completed_at',
             ]);
-        $reviewers = User::query()
-            ->permission('ai.review')
-            ->where('is_active', true)
-            ->whereKeyNot($request->user()->id)
-            ->whereHas('organizationalUnits', fn ($query) => $query->whereIn('organizational_units.id', $unitIds))
-            ->with(['organizationalUnits' => fn ($query) => $query->select('organizational_units.id')])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (User $user): array => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'unit_ids' => $user->organizationalUnits->pluck('id')->values(),
-            ]);
         $jobs = DB::table('ai_jobs')
             ->join('analysis_runs', 'ai_jobs.analysis_run_id', '=', 'analysis_runs.id')
             ->join('surveys', 'analysis_runs.survey_id', '=', 'surveys.id')
             ->join('aggregate_snapshots', 'ai_jobs.aggregate_snapshot_id', '=', 'aggregate_snapshots.id')
             ->leftJoin('organizational_units', 'aggregate_snapshots.owner_unit_id', '=', 'organizational_units.id')
-            ->leftJoin('ai_results', 'ai_jobs.id', '=', 'ai_results.ai_job_id')
             ->whereIn('aggregate_snapshots.owner_unit_id', $unitIds)
             ->orderByDesc('ai_jobs.created_at')
             ->limit(50)
@@ -68,11 +52,10 @@ class AiController extends Controller
                 'surveys.name as survey',
                 'organizational_units.name as unit',
                 'ai_jobs.state',
-                'ai_results.review_status',
                 'ai_jobs.created_at',
             ]);
 
-        return response()->json(['data' => compact('runs', 'reviewers', 'jobs')]);
+        return response()->json(['data' => compact('runs', 'jobs')]);
     }
 
     public function configs(): JsonResponse
@@ -150,12 +133,8 @@ class AiController extends Controller
         if (! $analysisRun->survey->owner_unit_id || ! $scope->allows($request->user(), $analysisRun->survey->owner_unit_id)) {
             throw new DomainRuleViolation('forbidden', 'Analysis run berada di luar scope Anda.', 403);
         }
-        $validated = $request->validate(['provider_config_id' => ['required', 'uuid', 'exists:ai_provider_configs,id'], 'prompt_template_id' => ['required', 'uuid', 'exists:ai_prompt_templates,id'], 'reviewer_id' => ['required', 'integer', 'exists:users,id']]);
-        $reviewer = User::findOrFail($validated['reviewer_id']);
-        if (! $scope->allows($reviewer, $analysisRun->survey->owner_unit_id)) {
-            throw new DomainRuleViolation('ai_governance_blocked', 'Reviewer harus berada dalam scope unit sumber.', 422);
-        }
-        $job = $orchestrator->request($analysisRun->load('snapshot'), AiProviderConfig::findOrFail($validated['provider_config_id']), AiPromptTemplate::findOrFail($validated['prompt_template_id']), $request->user(), $reviewer);
+        $validated = $request->validate(['provider_config_id' => ['required', 'uuid', 'exists:ai_provider_configs,id'], 'prompt_template_id' => ['required', 'uuid', 'exists:ai_prompt_templates,id']]);
+        $job = $orchestrator->request($analysisRun->load('snapshot'), AiProviderConfig::findOrFail($validated['provider_config_id']), AiPromptTemplate::findOrFail($validated['prompt_template_id']), $request->user());
 
         return response()->json(['data' => $this->jobData($job->load('result'))], 202);
     }
@@ -170,36 +149,6 @@ class AiController extends Controller
     public function showResult(Request $request, AiResult $aiResult, OrganizationalScope $scope): JsonResponse
     {
         $this->assertJobScope($request, $aiResult->job, $scope);
-        if (! $request->user()->can('ai.review') && $aiResult->review_status !== 'approved') {
-            throw new DomainRuleViolation('not_found', 'Hasil AI belum tersedia untuk pembaca.', 404);
-        }
-
-        return response()->json(['data' => $this->resultData($aiResult)]);
-    }
-
-    public function review(Request $request, AiResult $aiResult, OrganizationalScope $scope, AiSafety $safety): JsonResponse
-    {
-        $job = $aiResult->job;
-        $this->assertJobScope($request, $job, $scope);
-        if ($job->reviewer_id !== $request->user()->id || $job->requested_by === $request->user()->id) {
-            throw new DomainRuleViolation('forbidden', 'Hanya reviewer independen yang ditugaskan dapat memutuskan.', 403);
-        }
-        $version = $this->ifMatch($request);
-        if ($version !== $aiResult->resource_version) {
-            throw new DomainRuleViolation('version_conflict', 'Hasil AI telah berubah.', 412);
-        }
-        $validated = $request->validate(['decision' => ['required', 'in:edit,approve,reject'], 'note' => ['required', 'string', 'min:3', 'max:4000'], 'content' => ['nullable', 'array']]);
-        $updates = ['reviewed_by' => $request->user()->id, 'review_note' => $validated['note'], 'reviewed_at' => now(), 'resource_version' => $aiResult->resource_version + 1];
-        if ($validated['decision'] === 'edit') {
-            if (! isset($validated['content'])) {
-                throw new DomainRuleViolation('validation_failed', 'Content terstruktur wajib untuk keputusan edit.', 422);
-            }
-            $updates += ['edited_content' => $safety->validateOutput($validated['content']), 'review_status' => 'edited'];
-        } else {
-            $updates['review_status'] = $validated['decision'] === 'approve' ? 'approved' : 'rejected';
-        }
-        $aiResult->update($updates);
-        activity('ai')->performedOn($aiResult)->causedBy($request->user())->withProperties(['decision' => $validated['decision'], 'version' => $aiResult->resource_version])->log('ai_result_reviewed');
 
         return response()->json(['data' => $this->resultData($aiResult)]);
     }
@@ -209,15 +158,6 @@ class AiController extends Controller
         if (! $scope->allows($request->user(), $job->snapshot->owner_unit_id)) {
             throw new DomainRuleViolation('forbidden', 'AI job berada di luar scope Anda.', 403);
         }
-    }
-
-    private function ifMatch(Request $request): int
-    {
-        if (! preg_match('/^(?:W\/)?"(\d+)"$/', (string) $request->header('If-Match'), $matches)) {
-            throw new DomainRuleViolation('precondition_required', 'If-Match version diperlukan.', 428);
-        }
-
-        return (int) $matches[1];
     }
 
     private function configData(AiProviderConfig $config): array
@@ -232,11 +172,11 @@ class AiController extends Controller
 
     private function jobData(AiJob $job): array
     {
-        return ['id' => $job->id, 'analysis_run_id' => $job->analysis_run_id, 'state' => $job->state, 'use_case' => $job->use_case, 'source_scope' => $job->source_scope, 'failure_code' => $job->failure_code, 'result_id' => $job->result?->id, 'review_status' => $job->result?->review_status, 'created_at' => $job->created_at?->toIso8601String(), 'completed_at' => $job->completed_at?->toIso8601String()];
+        return ['id' => $job->id, 'analysis_run_id' => $job->analysis_run_id, 'state' => $job->state, 'use_case' => $job->use_case, 'source_scope' => $job->source_scope, 'failure_code' => $job->failure_code, 'result_id' => $job->result?->id, 'created_at' => $job->created_at?->toIso8601String(), 'completed_at' => $job->completed_at?->toIso8601String()];
     }
 
     private function resultData(AiResult $result): array
     {
-        return ['id' => $result->id, 'job_id' => $result->ai_job_id, 'label' => $result->label, 'content' => $result->edited_content ?? $result->content, 'source_scope' => $result->source_scope, 'provider' => $result->provider, 'model' => $result->model, 'generated_at' => $result->generated_at?->toIso8601String(), 'review_status' => $result->review_status, 'reviewed_at' => $result->reviewed_at?->toIso8601String(), 'review_note' => $result->review_note, 'version' => $result->resource_version];
+        return ['id' => $result->id, 'job_id' => $result->ai_job_id, 'label' => $result->label, 'content' => $result->edited_content ?? $result->content, 'source_scope' => $result->source_scope, 'provider' => $result->provider, 'model' => $result->model, 'generated_at' => $result->generated_at?->toIso8601String()];
     }
 }

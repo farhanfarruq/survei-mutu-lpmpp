@@ -42,6 +42,16 @@ class AnalyticsReportingTest extends TestCase
         $this->actingAs($reviewer)->postJson("/api/v1/analysis-runs/{$runId}/releases")
             ->assertOk()->assertJsonPath('data.state', 'released');
 
+        $activeSurvey = Survey::factory()->create([
+            'instrument_version_id' => $survey->instrument_version_id,
+            'survey_period_id' => $survey->survey_period_id,
+            'owner_unit_id' => $survey->owner_unit_id,
+            'state' => SurveyState::Active,
+            'name' => 'Survei terbaru tanpa snapshot',
+            'responses_count' => 1,
+            'reporting_threshold' => 10,
+        ]);
+
         $dashboard = $this->actingAs($leader)->getJson('/api/v1/leadership/results?drilldown=item')
             ->assertOk()->assertJsonPath('data.summary.overall.normalized_score', 75)
             ->assertJsonPath('data.summary.survey_id', $survey->id)
@@ -50,6 +60,18 @@ class AnalyticsReportingTest extends TestCase
             ->assertJsonPath('data.drilldown.0.category_name', 'Layanan')
             ->assertJsonPath('data.drilldown.0.response_type', 'scale')
             ->assertJsonPath('data.drilldown.0.distribution.0.label', 'Pilihan 4');
+        $dashboard->assertJsonFragment([
+            'id' => $activeSurvey->id,
+            'name' => 'Survei terbaru tanpa snapshot',
+            'state' => 'active',
+            'responses_count' => 1,
+            'reporting_threshold' => 10,
+            'has_released_result' => false,
+        ]);
+        $this->actingAs($leader)->getJson("/api/v1/leadership/results?survey_id={$activeSurvey->id}")
+            ->assertOk()
+            ->assertJsonPath('data.summary', null)
+            ->assertJsonPath('data.selected_survey.id', $activeSurvey->id);
         $this->assertStringNotContainsString('response_answers', $dashboard->getContent());
         $this->assertStringNotContainsString('respondent_session', $dashboard->getContent());
         $this->assertStringNotContainsString('receipt_code', $dashboard->getContent());
@@ -59,7 +81,7 @@ class AnalyticsReportingTest extends TestCase
     {
         [$survey, $analyst, $reviewer] = $this->fixture(9);
         $other = User::factory()->create();
-        $other->assignRole('admin_lpmpp');
+        $other->givePermissionTo('analysis.execute');
         $otherUnit = OrganizationalUnit::factory()->create();
         $other->organizationalUnits()->attach($otherUnit, ['scope_mode' => 'self', 'is_primary' => true]);
 
@@ -90,6 +112,18 @@ class AnalyticsReportingTest extends TestCase
         $this->actingAs($analyst)->get("/api/v1/report-downloads/{$token}")->assertOk();
         $this->actingAs($analyst)->getJson("/api/v1/report-downloads/{$token}")->assertGone()->assertJsonPath('code', 'download_ticket_invalid');
         $this->assertDatabaseHas('activity_log', ['description' => 'report_export_downloaded']);
+
+        $pdfId = $this->actingAs($analyst)
+            ->withHeaders(['Idempotency-Key' => 'golden-export-pdf-key-0001'])
+            ->postJson('/api/v1/report-exports', ['aggregate_snapshot_id' => $snapshotId, 'format' => 'pdf'])
+            ->assertAccepted()->assertJsonPath('data.state', 'completed')->json('data.id');
+        Storage::disk('local')->assertExists("report-exports/{$pdfId}.pdf");
+        $this->assertStringStartsWith('%PDF-', Storage::disk('local')->get("report-exports/{$pdfId}.pdf"));
+        $pdfToken = $this->actingAs($analyst)->postJson("/api/v1/report-exports/{$pdfId}/download-tickets")
+            ->assertCreated()->json('data.download_token');
+        $this->actingAs($analyst)->get("/api/v1/report-downloads/{$pdfToken}")
+            ->assertOk()->assertDownload("report-{$pdfId}.pdf");
+
         ReportExport::findOrFail($exportId)->update(['expires_at' => now()->subSecond()]);
         $this->actingAs($analyst)->getJson("/api/v1/report-exports/{$exportId}")->assertOk()->assertJsonPath('data.state', 'expired');
     }

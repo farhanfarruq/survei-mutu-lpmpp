@@ -101,6 +101,21 @@ class ResponseCollectionTest extends TestCase
             ->assertJsonPath('data.0.id', $survey->id);
     }
 
+    public function test_parent_unit_target_includes_respondent_in_descendant_program(): void
+    {
+        [$survey, $respondent] = $this->fixture();
+        $program = $respondent->organizationalUnits()->firstOrFail();
+        $institute = OrganizationalUnit::factory()->create();
+        $faculty = OrganizationalUnit::factory()->create(['parent_id' => $institute->id]);
+        $program->update(['parent_id' => $faculty->id]);
+        $survey->targets()->update(['target_unit_id' => $institute->id]);
+
+        $this->actingAs($respondent)
+            ->getJson('/api/v1/surveys/eligible')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $survey->id);
+    }
+
     public function test_expired_and_revoked_external_invitations_are_rejected(): void
     {
         [$survey] = $this->fixture();

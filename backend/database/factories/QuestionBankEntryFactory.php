@@ -25,6 +25,7 @@ class QuestionBankEntryFactory extends Factory
             'response_type' => 'scale',
             'measurement_purpose' => $this->faker->sentence(),
             'is_active' => true,
+            'is_default' => false,
             'created_by' => User::factory(),
         ];
     }

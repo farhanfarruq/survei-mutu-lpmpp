@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ShieldCheck } from '@lucide/vue'
 import { reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -34,9 +33,8 @@ async function submit() {
         <img class="brand-logo" src="/itda-logo.webp" alt="Logo ITDA" />
         <div><strong>SIMUTU</strong><span>Sistem Survei Mutu LPMPP</span></div>
       </div>
-      <p class="eyebrow">Akses survei</p>
-      <h1 id="login-title" tabindex="-1">Masuk ke sistem</h1>
-      <p class="lede">Masukkan NIM, nomor dosen, atau ID akun yang terdaftar.</p>
+      <h1 id="login-title" tabindex="-1">Masuk</h1>
+      <p class="lede">Masukkan identitas akun dan kata sandi.</p>
       <BaseAlert v-if="auth.error" tone="error" title="Login gagal"
         ><p>{{ auth.error.message }}</p>
         <small v-if="auth.error.requestId">Request ID: {{ auth.error.requestId }}</small></BaseAlert
@@ -75,17 +73,8 @@ async function submit() {
         <BaseButton type="submit" :loading="auth.loading">Masuk</BaseButton>
       </form>
       <p class="fine-print">
-        Belum memiliki akun? <RouterLink to="/register">Buat akun responden</RouterLink>
+        Belum memiliki akun? <RouterLink to="/register">Daftar sebagai responden</RouterLink>
       </p>
     </section>
-    <aside class="login-context" aria-label="Informasi login">
-      <p class="eyebrow">Login lebih mudah</p>
-      <h2>Tidak perlu mengingat alamat email.</h2>
-      <ul class="feature-list">
-        <li><ShieldCheck :size="18" aria-hidden="true" /> Gunakan nomor identitas akun</li>
-        <li><ShieldCheck :size="18" aria-hidden="true" /> Survei sesuai program studi</li>
-        <li><ShieldCheck :size="18" aria-hidden="true" /> Satu akun untuk satu pengguna</li>
-      </ul>
-    </aside>
   </main>
 </template>

@@ -55,7 +55,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/report-exports/{reportExport}/download-tickets', [AnalyticsReportingController::class, 'ticket'])->middleware('permission:report.export|report.approve');
         Route::get('/report-downloads/{token}', [AnalyticsReportingController::class, 'download'])->middleware('permission:report.export|report.approve');
 
-        Route::get('/ai-workspace-options', [AiController::class, 'workspace'])->middleware('permission:ai.read|ai.execute|ai.review');
+        Route::get('/ai-workspace-options', [AiController::class, 'workspace'])->middleware('permission:ai.read|ai.execute');
         Route::get('/ai-provider-configs', [AiController::class, 'configs'])->middleware('permission:ai.config|ai.execute');
         Route::post('/ai-provider-configs', [AiController::class, 'saveConfig'])->middleware('permission:ai.config');
         Route::post('/ai-provider-configs/{aiProviderConfig}/connection-tests', [AiController::class, 'testConnection'])->middleware('permission:ai.config');
@@ -63,11 +63,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/ai-prompt-templates', [AiController::class, 'savePrompt'])->middleware('permission:ai.config');
         Route::post('/analysis-runs/{analysisRun}/ai-jobs', [AiController::class, 'createJob'])->middleware('permission:ai.execute');
         Route::get('/ai-jobs/{aiJob}', [AiController::class, 'showJob'])->middleware('permission:ai.read');
-        Route::get('/ai-results/{aiResult}', [AiController::class, 'showResult'])->middleware('permission:ai.read|ai.review');
-        Route::post('/ai-results/{aiResult}/review-decisions', [AiController::class, 'review'])->middleware('permission:ai.review');
+        Route::get('/ai-results/{aiResult}', [AiController::class, 'showResult'])->middleware('permission:ai.read');
 
         Route::get('/notifications', [NotificationController::class, 'index'])->middleware('permission:notification.read');
-        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->middleware(['permission:notification.read', 'role:respondent']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->middleware('permission:notification.read');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->middleware('permission:notification.read');
 
         Route::get('/findings', [FollowUpController::class, 'index'])->middleware('permission:finding.read');
         Route::get('/follow-up-assignees', [FollowUpController::class, 'assignees'])->middleware('permission:action.create');

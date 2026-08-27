@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { UserRoundPlus } from '@lucide/vue'
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -54,12 +53,8 @@ async function submit() {
         <img class="brand-logo" src="/itda-logo.webp" alt="Logo ITDA" />
         <div><strong>SIMUTU</strong><span>Sistem Survei Mutu LPMPP</span></div>
       </div>
-      <p class="eyebrow">Akun responden</p>
-      <h1 id="register-title" tabindex="-1">Buat akun</h1>
-      <p class="lede">
-        Isi identitas akademik dan program studi Anda. Akun ini hanya dapat digunakan untuk mengisi
-        survei.
-      </p>
+      <h1 id="register-title" tabindex="-1">Pendaftaran akun</h1>
+      <p class="lede">Lengkapi data berikut untuk membuat akun responden.</p>
       <BaseAlert v-if="optionsError" tone="error" title="Program studi tidak dapat dimuat"
         ><p>{{ optionsError }}</p></BaseAlert
       >
@@ -159,17 +154,8 @@ async function submit() {
         >
       </form>
       <p class="fine-print">
-        Sudah memiliki akun? <RouterLink to="/login">Kembali ke login</RouterLink>
+        Sudah memiliki akun? <RouterLink to="/login">Kembali ke halaman masuk</RouterLink>
       </p>
     </section>
-    <aside class="login-context" aria-label="Informasi akun">
-      <p class="eyebrow">Sederhana dan aman</p>
-      <h2>Satu nomor identitas untuk satu akun.</h2>
-      <ul class="feature-list">
-        <li><UserRoundPlus :size="18" aria-hidden="true" /> Tidak perlu mengingat email</li>
-        <li><UserRoundPlus :size="18" aria-hidden="true" /> Survei mengikuti program studi</li>
-        <li><UserRoundPlus :size="18" aria-hidden="true" /> Akun baru selalu menjadi responden</li>
-      </ul>
-    </aside>
   </main>
 </template>

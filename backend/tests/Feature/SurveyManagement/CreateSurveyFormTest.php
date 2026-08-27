@@ -7,6 +7,7 @@ use App\Filament\Resources\InstrumentVersions\Pages\ViewInstrumentVersion;
 use App\Filament\Resources\InstrumentVersions\RelationManagers\SectionsRelationManager;
 use App\Models\InstrumentVersion;
 use App\Models\OrganizationalUnit;
+use App\Models\QuestionBankEntry;
 use App\Models\User;
 use App\Services\InstrumentLifecycle;
 use Database\Seeders\RolePermissionSeeder;
@@ -191,6 +192,58 @@ class CreateSurveyFormTest extends TestCase
             ->set('data.audience_preset', 'alumni')
             ->assertSet('data.questions.0.item_text', 'Seberapa puas Anda terhadap layanan alumni?')
             ->assertSet('data.questions.1.response_type', 'yes_no')
-            ->assertSet('data.questions.2.category_name', 'Saran');
+            ->assertSet('data.questions.2.category_name', 'Saran')
+            ->assertSee('Pertanyaan 1')
+            ->assertSee('Pertanyaan 2')
+            ->assertSee('Pertanyaan 3');
+    }
+
+    public function test_default_bank_questions_can_be_added_and_the_same_draft_can_be_edited(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $unit = OrganizationalUnit::factory()->create();
+        $admin = User::factory()->create();
+        $admin->assignRole('admin_lpmpp');
+        $admin->organizationalUnits()->attach($unit, ['scope_mode' => 'self', 'is_primary' => true]);
+        $entry = QuestionBankEntry::factory()->create([
+            'owner_unit_id' => $unit->id,
+            'created_by' => $admin->id,
+            'item_text' => 'Apakah pelayanan mudah dipahami?',
+            'response_type' => 'single_choice',
+            'default_options' => [
+                ['code' => 'YA', 'label' => 'Ya'],
+                ['code' => 'TIDAK', 'label' => 'Tidak'],
+            ],
+            'is_default' => true,
+        ]);
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($admin);
+
+        Livewire::test(CreateSurveyForm::class)
+            ->set('data.owner_unit_id', $unit->id)
+            ->call('addDefaultBankQuestions')
+            ->assertSet('data.questions.0.question_bank_entry_id', $entry->id)
+            ->assertSet('data.questions.0.response_type', 'single_choice')
+            ->set('data.title', 'Formulir dari Bank')
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $version = InstrumentVersion::query()->with('sections.questions')->sole();
+        $savedQuestion = $version->sections->first()->questions->sole();
+        $this->assertSame($entry->id, $savedQuestion->question_bank_entry_id);
+        $this->assertSame('single_choice', $savedQuestion->response_type);
+
+        Livewire::test(CreateSurveyForm::class, ['record' => $version->id])
+            ->assertSet('data.title', 'Formulir dari Bank')
+            ->assertSet('data.questions.0.response_type', 'single_choice')
+            ->set('data.title', 'Formulir Diperbarui')
+            ->set('data.questions.0.item_text', 'Apakah pelayanan sangat mudah dipahami?')
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(1, InstrumentVersion::query()->count());
+        $this->assertSame('Formulir Diperbarui', $version->fresh()->template->name);
+        $this->assertSame('Apakah pelayanan sangat mudah dipahami?', $version->fresh()->sections()->first()->questions()->sole()->item_text);
     }
 }
