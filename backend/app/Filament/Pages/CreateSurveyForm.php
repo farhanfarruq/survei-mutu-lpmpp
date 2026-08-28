@@ -157,7 +157,8 @@ class CreateSurveyForm extends Page
                     ->required()
                     ->disabled(fn (): bool => $this->isEditing())
                     ->dehydrated()
-                    ->searchable(),
+                    ->searchable()
+                    ->columnSpanFull(),
                 TextInput::make('title')
                     ->label('Judul formulir')
                     ->placeholder('Contoh: Survei Kepuasan Layanan Akademik')

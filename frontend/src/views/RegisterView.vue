@@ -38,7 +38,7 @@ onMounted(async () => {
 
 async function submit() {
   try {
-    await auth.register({ ...form, identity_number: form.identity_number.trim().toUpperCase() })
+    await auth.register({ ...form, identity_number: form.identity_number.trim() })
     await router.replace('/app/surveys')
   } catch {
     // The store exposes validation errors next to their fields.
@@ -90,7 +90,7 @@ async function submit() {
         >
         <FormField
           id="identity-number"
-          label="NIM / nomor dosen"
+          label="NIM 8 digit / nomor dosen 12 digit"
           :error="auth.error?.fields.identity_number?.[0]"
           ><template #default="{ describedBy }"
             ><input
@@ -98,8 +98,12 @@ async function submit() {
               v-model="form.identity_number"
               type="text"
               autocomplete="username"
-              autocapitalize="characters"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              :minlength="form.account_type === 'student' ? 8 : 12"
+              :maxlength="form.account_type === 'student' ? 8 : 12"
               required
+              @input="form.identity_number = form.identity_number.replace(/\D/g, '')"
               :aria-describedby="describedBy" /></template
         ></FormField>
         <FormField

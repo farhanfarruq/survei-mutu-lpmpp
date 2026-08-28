@@ -4,6 +4,7 @@ namespace Tests\Feature\AdminFlexibility;
 
 use App\Enums\SurveyState;
 use App\Exceptions\DomainRuleViolation;
+use App\Filament\Resources\Activities\Pages\ListActivities;
 use App\Filament\Resources\QuestionBankEntries\Pages\CreateQuestionBankEntry;
 use App\Filament\Resources\QuestionBankEntries\QuestionBankEntryResource;
 use App\Models\OrganizationalUnit;
@@ -17,6 +18,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
 class Phase16Test extends TestCase
@@ -96,6 +98,25 @@ class Phase16Test extends TestCase
             ->assertDontSee('Responden Tersembunyi');
 
         $this->actingAs($respondent)->get('/admin/activities')->assertForbidden();
+    }
+
+    public function test_activity_role_filter_can_be_combined_with_actor_sorting(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $leader = User::factory()->create();
+        $leader->assignRole('leader');
+        $admin = User::factory()->create(['name' => 'Admin Aktivitas']);
+        $admin->assignRole('admin_lpmpp');
+        activity('test')->causedBy($admin)->event('updated')->log('Admin updated data');
+        $activity = Activity::query()->where('causer_id', $admin->id)->sole();
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($leader);
+
+        Livewire::test(ListActivities::class)
+            ->filterTable('role', 'admin_lpmpp')
+            ->sortTable('causer.name')
+            ->assertCanSeeTableRecords([$activity]);
     }
 
     public function test_notification_read_all_only_updates_the_authenticated_users_notifications(): void

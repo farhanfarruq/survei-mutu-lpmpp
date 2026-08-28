@@ -65,6 +65,7 @@ class UnifiedLoginAndDemoAccountsTest extends TestCase
             $this->assertTrue($user->hasRole($role), "Role {$role} tidak ditemukan untuk {$email}.");
             $this->assertTrue(Hash::check('password', $user->password), "Password default salah untuk {$email}.");
             $this->assertTrue($user->is_active);
+            $this->assertMatchesRegularExpression('/^[0-9]+$/', (string) $user->identity_number);
             $this->assertCount(1, $user->organizationalUnits);
             $this->assertSame(in_array($role, ['super_admin', 'admin_lpmpp', 'leader'], true), $user->can('admin.panel.access'));
         }

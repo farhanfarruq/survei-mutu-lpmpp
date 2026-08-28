@@ -42,7 +42,7 @@ async function submit() {
       <form class="login-form" @submit.prevent="submit">
         <FormField
           id="identity-number"
-          label="NIM / nomor dosen / ID akun"
+          label="NIM 8 digit / nomor dosen 12 digit"
           :error="auth.error?.fields.identity_number?.[0]"
         >
           <template #default="{ describedBy }"
@@ -51,8 +51,12 @@ async function submit() {
               v-model="form.identity_number"
               type="text"
               autocomplete="username"
-              autocapitalize="characters"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              minlength="8"
+              maxlength="12"
               required
+              @input="form.identity_number = form.identity_number.replace(/\D/g, '')"
               :aria-describedby="describedBy"
           /></template>
         </FormField>

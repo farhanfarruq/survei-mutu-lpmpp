@@ -19,7 +19,6 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
 
 class UserResource extends Resource
 {
@@ -43,10 +42,14 @@ class UserResource extends Resource
                 'staff' => 'Tenaga kependidikan',
             ]),
             TextInput::make('identity_number')
-                ->label('NIM / nomor dosen / ID akun')
+                ->label('Nomor identitas')
+                ->required()
                 ->unique(ignoreRecord: true)
-                ->maxLength(50)
-                ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? Str::upper(trim($state)) : null),
+                ->regex('/^[0-9]+$/')
+                ->minLength(8)
+                ->maxLength(12)
+                ->helperText('NIM mahasiswa 8 digit; nomor dosen dan tenaga kependidikan 12 digit.')
+                ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? trim($state) : null),
             TextInput::make('email')->label('Email internal')->helperText('Tetap digunakan untuk akun pengelola lama dan pemulihan akun.')->email()->required()->unique(ignoreRecord: true)->maxLength(255),
             TextInput::make('password')
                 ->label('Kata sandi')

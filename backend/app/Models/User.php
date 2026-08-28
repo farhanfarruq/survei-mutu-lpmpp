@@ -27,7 +27,7 @@ class User extends Authenticatable implements FilamentUser
     {
         static::saving(function (self $user): void {
             $user->identity_number = filled($user->identity_number)
-                ? Str::upper(trim((string) $user->identity_number))
+                ? trim((string) $user->identity_number)
                 : null;
         });
 

@@ -106,26 +106,49 @@ class SurveyResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            TextEntry::make('name')->label('Nama survei'),
-            TextEntry::make('state')->label('Status')->badge()->formatStateUsing(fn (SurveyState|string $state): string => self::statusLabel($state)),
-            TextEntry::make('ownerUnit.name')->label('Unit penanggung jawab'),
-            TextEntry::make('instrumentVersion.template.name')->label('Formulir'),
-            TextEntry::make('opens_at')->label('Mulai pengisian')->dateTime()->timezone('Asia/Jakarta'),
-            TextEntry::make('closes_at')->label('Batas akhir')->dateTime()->timezone('Asia/Jakarta'),
-            TextEntry::make('code')->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
-            TextEntry::make('instrument_version')->label('Versi')->state(fn (Survey $record) => $record->instrumentVersion->versionLabel())->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
-            TextEntry::make('privacy_mode')->label('Mode privasi')->badge()->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
-            TextEntry::make('reporting_threshold')->label('Batas minimum laporan')->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
-            RepeatableEntry::make('targets')->label('Kelompok sasaran')->schema([
-                TextEntry::make('respondentGroup.name')->label('Kelompok')->placeholder('—'),
-                TextEntry::make('targetUnit.name')->label('Unit')->placeholder('—'),
-                TextEntry::make('eligible_count')->label('Perkiraan responden'),
-            ])->columns(2)->columnSpanFull(),
-            RepeatableEntry::make('instrumentVersion.sections')->label('Isi formulir')->schema([
-                TextEntry::make('title')->label('Bagian'),
-                RepeatableEntry::make('questions')->label('Pertanyaan')->schema([TextEntry::make('item_text')->label('Pertanyaan')])->columnSpanFull(),
-            ])->columnSpanFull(),
-        ])->columns(2);
+            Section::make('Ringkasan survei')
+                ->description('Informasi utama untuk memantau pelaksanaan survei.')
+                ->schema([
+                    TextEntry::make('name')->label('Nama survei')->size('lg')->weight('semibold')->columnSpanFull(),
+                    TextEntry::make('state')->label('Status saat ini')->badge()->formatStateUsing(fn (SurveyState|string $state): string => self::statusLabel($state)),
+                    TextEntry::make('instrumentVersion.template.name')->label('Formulir yang digunakan')->size('base')->weight('medium'),
+                    TextEntry::make('ownerUnit.name')->label('Unit penanggung jawab')->size('base')->weight('medium'),
+                    TextEntry::make('opens_at')->label('Mulai pengisian (WIB)')->dateTime('d M Y, H:i')->timezone('Asia/Jakarta'),
+                    TextEntry::make('closes_at')->label('Batas akhir pengisian (WIB)')->dateTime('d M Y, H:i')->timezone('Asia/Jakarta'),
+                ])
+                ->columns(2),
+            Section::make('Sasaran responden')
+                ->description('Kelompok yang dapat menerima dan mengisi survei ini.')
+                ->schema([
+                    RepeatableEntry::make('targets')->label('')->schema([
+                        TextEntry::make('respondentGroup.name')->label('Kelompok')->placeholder('—')->size('base')->weight('medium'),
+                        TextEntry::make('targetUnit.name')->label('Unit')->placeholder('—')->size('base')->weight('medium'),
+                        TextEntry::make('eligible_count')->label('Perkiraan responden')->numeric()->size('base')->weight('medium'),
+                    ])->columns(3),
+                ]),
+            Section::make('Isi formulir')
+                ->description('Bagian dan pertanyaan yang akan dilihat responden.')
+                ->schema([
+                    RepeatableEntry::make('instrumentVersion.sections')->label('')->schema([
+                        TextEntry::make('title')->label('Bagian')->size('lg')->weight('semibold'),
+                        RepeatableEntry::make('questions')->label('Daftar pertanyaan')->schema([
+                            TextEntry::make('item_text')->label('Pertanyaan')->size('base')->weight('medium'),
+                        ])->columnSpanFull(),
+                    ])->columnSpanFull(),
+                ]),
+            Section::make('Informasi teknis')
+                ->description('Hanya untuk pengecekan administrator sistem.')
+                ->schema([
+                    TextEntry::make('code')->label('Kode sistem')->copyable(),
+                    TextEntry::make('instrument_version')->label('Versi formulir')->state(fn (Survey $record) => $record->instrumentVersion->versionLabel())->size('base')->weight('medium'),
+                    TextEntry::make('privacy_mode')->label('Mode privasi')->badge(),
+                    TextEntry::make('reporting_threshold')->label('Batas minimum laporan')->size('base')->weight('medium'),
+                ])
+                ->columns(2)
+                ->collapsible()
+                ->collapsed()
+                ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+        ]);
     }
 
     public static function table(Table $table): Table

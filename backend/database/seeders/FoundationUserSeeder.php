@@ -17,10 +17,10 @@ class FoundationUserSeeder extends Seeder
         }
 
         $profiles = [
-            ['name' => 'Super Admin ITDA', 'email' => 'superadmin@example.test', 'identity_number' => 'ADMIN-001', 'account_type' => 'staff', 'role' => 'super_admin'],
-            ['name' => 'Admin LPMPP ITDA', 'email' => 'admin.lpmpp@example.test', 'identity_number' => 'LPMPP-001', 'account_type' => 'staff', 'role' => 'admin_lpmpp'],
-            ['name' => 'Pimpinan ITDA', 'email' => 'pimpinan@example.test', 'identity_number' => 'PIMPINAN-001', 'account_type' => 'lecturer', 'role' => 'leader'],
-            ['name' => 'Responden ITDA', 'email' => 'responden@example.test', 'identity_number' => 'MHS-001', 'account_type' => 'student', 'role' => 'respondent'],
+            ['name' => 'Super Admin ITDA', 'email' => 'superadmin@example.test', 'identity_number' => '900000000001', 'account_type' => 'staff', 'role' => 'super_admin'],
+            ['name' => 'Admin LPMPP ITDA', 'email' => 'admin.lpmpp@example.test', 'identity_number' => '900000000002', 'account_type' => 'staff', 'role' => 'admin_lpmpp'],
+            ['name' => 'Pimpinan ITDA', 'email' => 'pimpinan@example.test', 'identity_number' => '120000000001', 'account_type' => 'lecturer', 'role' => 'leader'],
+            ['name' => 'Responden ITDA', 'email' => 'responden@example.test', 'identity_number' => '20260001', 'account_type' => 'student', 'role' => 'respondent'],
         ];
 
         foreach ($profiles as $profile) {

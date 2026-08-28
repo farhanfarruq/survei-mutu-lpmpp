@@ -33,10 +33,17 @@ class SurveyWorkflowQueue extends TableWidget
             ->heading('Antrean kerja survei')
             ->description('Survei yang masih membutuhkan tindakan atau pemantauan.')
             ->columns([
-                TextColumn::make('name')->label('Survei')->searchable()->wrap()->limit(55),
+                TextColumn::make('name')
+                    ->label('Survei')
+                    ->description(fn (Survey $record): string => $record->ownerUnit?->name ?? 'Unit belum ditentukan')
+                    ->searchable()
+                    ->wrap()
+                    ->width('42%')
+                    ->url(fn (Survey $record): string => SurveyResource::getUrl('view', ['record' => $record])),
                 TextColumn::make('state')
-                    ->label('Status workflow')
+                    ->label('Status')
                     ->badge()
+                    ->width('11rem')
                     ->formatStateUsing(fn (SurveyState|string $state): string => self::statusLabel($state))
                     ->color(fn (Survey $record): string => match ($record->getRawOriginal('state')) {
                         'returned' => 'danger',
@@ -45,14 +52,19 @@ class SurveyWorkflowQueue extends TableWidget
                         default => 'gray',
                     }),
                 TextColumn::make('next_action')
-                    ->label('Tindakan berikutnya')
+                    ->label('Tindakan')
                     ->state(fn (Survey $record): string => self::nextAction($record->state))
+                    ->description(fn (Survey $record): string => $record->period?->name ?? 'Periode belum ditentukan')
                     ->weight('medium')
-                    ->wrap(),
-                TextColumn::make('ownerUnit.name')->label('Unit'),
-                TextColumn::make('period.name')->label('Periode')->placeholder('—'),
-                TextColumn::make('responses_count')->label('Jawaban')->numeric(),
-                TextColumn::make('updated_at')->label('Diperbarui')->dateTime('d M Y H:i')->timezone('Asia/Jakarta'),
+                    ->wrap()
+                    ->width('16rem')
+                    ->url(fn (Survey $record): string => SurveyResource::getUrl('view', ['record' => $record])),
+                TextColumn::make('responses_count')->label('Jawaban')->numeric()->width('5rem'),
+                TextColumn::make('updated_at')
+                    ->label('Diperbarui')
+                    ->dateTime('d M Y')
+                    ->description(fn (Survey $record): string => $record->updated_at?->timezone('Asia/Jakarta')->format('H:i') ?? '—')
+                    ->width('7rem'),
             ])
             ->recordUrl(fn (Survey $record): string => SurveyResource::getUrl('view', ['record' => $record]))
             ->paginated(false)

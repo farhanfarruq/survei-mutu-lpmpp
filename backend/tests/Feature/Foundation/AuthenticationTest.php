@@ -24,14 +24,14 @@ class AuthenticationTest extends TestCase
         $unit = OrganizationalUnit::factory()->create();
         $user = User::factory()->create([
             'email' => 'admin@example.test',
-            'identity_number' => 'DOSEN-001',
+            'identity_number' => '120000000001',
             'password' => Hash::make('ValidPassphrase!123'),
         ]);
         $user->assignRole('admin_lpmpp');
         $user->organizationalUnits()->attach($unit, ['scope_mode' => 'self', 'is_primary' => true]);
 
         $this->postJson('/api/v1/auth/login', [
-            'identity_number' => 'dosen-001',
+            'identity_number' => '120000000001',
             'password' => 'ValidPassphrase!123',
         ])->assertOk();
 
@@ -51,18 +51,34 @@ class AuthenticationTest extends TestCase
     {
         User::factory()->create([
             'email' => 'inactive@example.test',
-            'identity_number' => 'MHS-001',
+            'identity_number' => '20260001',
             'password' => Hash::make('ValidPassphrase!123'),
             'is_active' => false,
         ]);
 
         $this->postJson('/api/v1/auth/login', [
-            'identity_number' => 'MHS-001',
+            'identity_number' => '20260001',
             'password' => 'ValidPassphrase!123',
         ])->assertUnprocessable()
             ->assertHeader('content-type', 'application/problem+json')
             ->assertJsonPath('code', 'validation_failed')
             ->assertJsonMissingPath('password');
+    }
+
+    public function test_login_rejects_identity_numbers_with_characters(): void
+    {
+        User::factory()->create([
+            'email' => 'legacy@example.test',
+            'identity_number' => 'MHS-001',
+            'password' => Hash::make('ValidPassphrase!123'),
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'identity_number' => 'MHS-001',
+            'password' => 'ValidPassphrase!123',
+        ])->assertUnprocessable();
+
+        $this->assertGuest();
     }
 
     public function test_authenticated_api_login_is_idempotent_without_cross_origin_redirect(): void
@@ -131,6 +147,21 @@ class AuthenticationTest extends TestCase
             'scope_mode' => 'self',
             'is_primary' => true,
         ]);
+    }
+
+    public function test_public_registration_rejects_identity_numbers_with_characters(): void
+    {
+        $program = OrganizationalUnit::factory()->create(['type' => 'program', 'is_active' => true]);
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Mahasiswa Baru',
+            'account_type' => 'student',
+            'identity_number' => 'MHS-0001',
+            'organizational_unit_id' => $program->id,
+            'password' => 'ValidPassphrase!123',
+            'password_confirmation' => 'ValidPassphrase!123',
+        ])->assertUnprocessable()
+            ->assertJsonFragment(['pointer' => '/identity_number']);
     }
 
     public function test_unauthenticated_api_uses_problem_details(): void

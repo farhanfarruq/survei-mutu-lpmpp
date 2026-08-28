@@ -36,11 +36,17 @@ class RegistrationController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $request->merge(['identity_number' => Str::upper(trim((string) $request->input('identity_number')))]);
+        $request->merge(['identity_number' => trim((string) $request->input('identity_number'))]);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:160'],
             'account_type' => ['required', Rule::in(['student', 'lecturer'])],
-            'identity_number' => ['required', 'string', 'min:4', 'max:50', 'regex:/^[A-Z0-9.-]+$/', Rule::unique(User::class)],
+            'identity_number' => [
+                'required',
+                'string',
+                'regex:/^[0-9]+$/',
+                $request->input('account_type') === 'student' ? 'digits:8' : 'digits:12',
+                Rule::unique(User::class),
+            ],
             'organizational_unit_id' => [
                 'required',
                 'uuid',

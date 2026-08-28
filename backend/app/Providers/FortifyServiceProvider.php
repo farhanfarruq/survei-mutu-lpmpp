@@ -38,11 +38,13 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
         Fortify::authenticateUsing(function (Request $request) {
             $identity = trim((string) $request->input('identity_number'));
+
+            if (! preg_match('/^(?:[0-9]{8}|[0-9]{12})$/', $identity)) {
+                return null;
+            }
+
             $user = User::query()
-                ->where(function ($query) use ($identity): void {
-                    $query->where('identity_number', Str::upper($identity))
-                        ->orWhereRaw('LOWER(email) = ?', [Str::lower($identity)]);
-                })
+                ->where('identity_number', $identity)
                 ->where('is_active', true)
                 ->first();
 

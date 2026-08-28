@@ -36,7 +36,13 @@ class ActivityResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('created_at')->label('Waktu')->dateTime('d M Y H:i')->timezone('Asia/Jakarta')->sortable(),
-                TextColumn::make('causer.name')->label('Pelaku')->searchable()->sortable(),
+                TextColumn::make('causer.name')
+                    ->label('Pelaku')
+                    ->searchable()
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy(
+                        User::query()->select('name')->whereColumn('users.id', 'activity_log.causer_id')->limit(1),
+                        $direction,
+                    )),
                 TextColumn::make('causer.roles.name')->label('Role')->badge(),
                 TextColumn::make('event')->label('Aktivitas')->badge()->formatStateUsing(fn (?string $state): string => self::eventLabel($state)),
                 TextColumn::make('subject')->label('Objek')->state(fn (Activity $record): string => self::subjectLabel($record))->wrap(),
